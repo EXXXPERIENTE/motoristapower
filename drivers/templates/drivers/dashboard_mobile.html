@@ -1,0 +1,93 @@
+{% extends 'drivers/base_mobile.html' %}
+
+{% block title %}Dashboard - MotoristaPower{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Cards de Estatísticas -->
+    <div class="col-6 mb-3">
+        <div class="card card-mobile bg-primary text-white text-center">
+            <div class="card-body py-3">
+                <h4 class="mb-1">{{ total_motoristas }}</h4>
+                <small>Total</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 mb-3">
+        <div class="card card-mobile bg-success text-white text-center">
+            <div class="card-body py-3">
+                <h4 class="mb-1">{{ motoristas_ativos }}</h4>
+                <small>Ativos</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="col-12 mb-3">
+        <div class="card card-mobile">
+            <div class="card-body">
+                <h6 class="card-title">Ações Rápidas</h6>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="{% url 'drivers:cadastro_motorista' %}" class="btn btn-success btn-mobile w-100">
+                            <i class="fas fa-user-plus"></i><br>
+                            <small>Novo</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'drivers:motorista_list' %}" class="btn btn-primary btn-mobile w-100">
+                            <i class="fas fa-list"></i><br>
+                            <small>Lista</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'drivers:relatorio_excel' %}" class="btn btn-info btn-mobile w-100">
+                            <i class="fas fa-file-excel"></i><br>
+                            <small>Excel</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'drivers:relatorio_pdf' %}" class="btn btn-danger btn-mobile w-100">
+                            <i class="fas fa-file-pdf"></i><br>
+                            <small>PDF</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimos Cadastros -->
+    <div class="col-12">
+        <div class="card card-mobile">
+            <div class="card-body">
+                <h6 class="card-title">Últimos Cadastros</h6>
+                {% if ultimos_cadastros %}
+                    {% for motorista in ultimos_cadastros %}
+                    <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                        {% if motorista.foto %}
+                            <img src="{{ motorista.foto.url }}" alt="Foto" class="photo-thumb-mobile me-2">
+                        {% else %}
+                            <div class="photo-thumb-mobile bg-light d-flex align-items-center justify-content-center me-2">
+                                <i class="fas fa-user text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <strong class="d-block">{{ motorista.nome_completo|truncatechars:15 }}</strong>
+                            <small class="text-muted">{{ motorista.created_at|date:"d/m" }}</small>
+                        </div>
+                        {% if motorista.status == 'ATIVO' %}
+                            <span class="badge bg-success">A</span>
+                        {% else %}
+                            <span class="badge bg-secondary">I</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center mb-0">Nenhum motorista</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

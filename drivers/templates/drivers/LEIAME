@@ -1,0 +1,19 @@
+C:\APPY\MotoristaPower\
+├── fleet\                  # Seu projeto Django
+│   ├── settings.py         # Arquivo corrigido acima
+│   ├── urls.py
+│   └── ...
+├── drivers\                # Seu app
+│   ├── templates\
+│   │   └── drivers\
+│   │       ├── base.html
+│   │       ├── dashboard.html
+│   │       ├── motorista_list.html
+│   │       └── ...
+│   └── ...
+├── templates\              # Templates globais (opcional)
+├── static\                 # Arquivos estáticos globais
+│   ├── css\
+│   ├── js\
+│   └── img\
+└── manage.py

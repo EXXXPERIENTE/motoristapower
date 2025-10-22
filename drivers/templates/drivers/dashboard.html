@@ -1,0 +1,152 @@
+{% extends 'drivers/base.html' %}
+
+{% block title %}Dashboard - MotoristaPower{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group">
+        <a href="{% url 'drivers:cadastro_motorista' %}" class="btn btn-success">
+            <i class="bi bi-person-plus"></i> Novo Motorista
+        </a>
+        <a href="{% url 'drivers:motorista_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> Ver Todos
+        </a>
+    </div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Stat Cards -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2 stats-card">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Motoristas
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_motoristas }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-people fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2 stats-card">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Cadastros Este Mês
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ novos_este_mes }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-person-plus fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2 stats-card">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Média de Idade
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ media_idade }} anos</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-calendar fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2 stats-card">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Último Cadastro
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ultimo_cadastro|date:"d/m/Y" }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="bi bi-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Motoristas -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="bi bi-clock-history me-2"></i>Cadastros Recentes
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if recent_motoristas %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CPF</th>
+                                <th>Data Nasc.</th>
+                                <th>Data Cadastro</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for motorista in recent_motoristas %}
+                            <tr>
+                                <td>{{ motorista.nome }}</td>
+                                <td>{{ motorista.cpf|slice:":3" }}.***.***-{{ motorista.cpf|slice:"9:11" }}</td>
+                                <td>{{ motorista.data_nascimento|date:"d/m/Y" }}</td>
+                                <td>{{ motorista.created_at|date:"d/m/Y H:i" }}</td>
+                                <td class="table-actions">
+                                    <a href="{% url 'drivers:motorista_update' motorista.pk %}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'drivers:motorista_delete' motorista.pk %}"
+                                       class="btn btn-sm btn-outline-danger"
+                                       title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-people display-1 text-muted"></i>
+                    <p class="text-muted mt-3">Nenhum motorista cadastrado ainda.</p>
+                    <a href="{% url 'drivers:cadastro_motorista' %}" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Cadastrar Primeiro Motorista
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

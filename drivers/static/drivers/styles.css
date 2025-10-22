@@ -1,0 +1,68 @@
+/* C:\APPY\MotoristaPower\drivers\static\drivers\styles.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 50px auto;
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: #007bff; /* Azul primário */
+    text-align: center;
+    margin-bottom: 40px;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
+}
+
+.card-grid {
+    display: flex;
+    gap: 25px;
+    justify-content: center;
+}
+
+.card {
+    flex: 1;
+    text-align: center;
+    padding: 30px;
+    border-radius: 10px;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.card h2 {
+    margin-top: 15px;
+    font-size: 1.5em;
+}
+
+.card .material-icons {
+    font-size: 4em;
+    margin-bottom: 10px;
+}
+
+/* Cores das Variáveis */
+.bg-drivers { background-color: #28a745; } /* Verde para Motoristas */
+.bg-admin { background-color: #dc3545; } /* Vermelho para Admin */
+
+a {
+    text-decoration: none;
+    color: inherit;
+}

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motoristas - MotoristaPower</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .table-actions {
+            white-space: nowrap;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+        }
+        .btn-custom {
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+        .photo-mini {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'drivers:dashboard' %}">
+                <i class="bi bi-truck"></i>
+                <span class="text-warning">Motorista</span>Power
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'drivers:dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'drivers:motorista_list' %}">
+                            <i class="bi bi-people-fill"></i> Motoristas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'drivers:cadastro_motorista' %}">
+                            <i class="bi bi-person-plus"></i> Cadastrar
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="card">
+                    <!-- Card Header -->
+                    <div class="card-header py-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h4 class="mb-0">
+                                    <i class="bi bi-people"></i> Lista de Motoristas
+                                    <span class="badge bg-warning ms-2">{{ motoristas.count }}</span>
+                                </h4>
+                            </div>
+                            <div class="col-md-6 text-md-end">
+                                <a href="{% url 'drivers:cadastro_motorista' %}" class="btn btn-success btn-custom">
+                                    <i class="bi bi-person-plus"></i> Novo Motorista
+                                </a>
+                                <a href="{% url 'drivers:relatorio_estatisticas' %}" class="btn btn-info btn-custom ms-2">
+                                    <i class="bi bi-graph-up"></i> Relatórios
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <!-- Filtros -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <form method="get" class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" placeholder="Buscar por nome ou CPF..."
+                                                   name="search" value="{{ request.GET.search }}">
+                                            <button class="btn btn-primary" type="submit">
+                                                <i class="bi bi-search"></i> Buscar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" name="status" onchange="this.form.submit()">
+                                            <option value="">Todos os status</option>
+                                            <option value="ATIVO" {% if request.GET.status == 'ATIVO' %}selected{% endif %}>Ativos</option>
+                                            <option value="INATIVO" {% if request.GET.status == 'INATIVO' %}selected{% endif %}>Inativos</option>
+                                            <option value="FERIAS" {% if request.GET.status == 'FERIAS' %}selected{% endif %}>Férias</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <a href="{% url 'drivers:motorista_list' %}" class="btn btn-outline-secondary w-100">
+                                            <i class="bi bi-arrow-clockwise"></i> Limpar
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Tabela de Motoristas -->
+                        {% if motoristas %}
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped align-middle">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th width="50">#</th>
+                                            <th width="80">Foto</th>
+                                            <th>Nome Completo</th>
+                                            <th>CPF</th>
+                                            <th>Data Nasc.</th>
+                                            <th>Idade</th>
+                                            <th>Contato</th>
+                                            <th>Cidade/UF</th>
+                                            <th>CNH</th>
+                                            <th>Status</th>
+                                            <th width="120" class="text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for motorista in motoristas %}
+                                        <tr>
+                                            <td class="fw-bold">{{ motorista.id }}</td>
+                                            <td>
+                                                {% if motorista.foto %}
+                                                    <img src="{{ motorista.foto.url }}"
+                                                         class="photo-mini"
+                                                         alt="Foto {{ motorista.nome_completo }}"
+                                                         title="{{ motorista.nome_completo }}">
+                                                {% else %}
+                                                    <div class="photo-mini bg-light d-flex align-items-center justify-content-center">
+                                                        <i class="bi bi-person text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if motorista.nome_completo %}
+                                                    <strong class="text-primary">{{ motorista.nome_completo }}</strong>
+                                                {% else %}
+                                                    <span class="text-danger fw-bold">
+                                                        <i class="bi bi-exclamation-triangle"></i> NOME NÃO CADASTRADO
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="font-monospace">{{ motorista.cpf_formatado }}</span>
+                                            </td>
+                                            <td>
+                                                {{ motorista.data_nascimento|date:"d/m/Y" }}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info fs-6">{{ motorista.idade }} anos</span>
+                                            </td>
+                                            <td>
+                                                {% if motorista.telefone %}
+                                                    <small class="text-muted">{{ motorista.telefone }}</small><br>
+                                                {% endif %}
+                                                {% if motorista.email %}
+                                                    <small class="text-muted">{{ motorista.email }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if motorista.cidade %}
+                                                    {{ motorista.cidade }}/{{ motorista.estado }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if motorista.cnh_numero %}
+                                                    <small>{{ motorista.cnh_categoria }}</small><br>
+                                                    <small class="text-muted">{{ motorista.cnh_numero }}</small>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if motorista.status == 'ATIVO' %}
+                                                    <span class="badge bg-success">{{ motorista.get_status_display }}</span>
+                                                {% elif motorista.status == 'INATIVO' %}
+                                                    <span class="badge bg-danger">{{ motorista.get_status_display }}</span>
+                                                {% elif motorista.status == 'FERIAS' %}
+                                                    <span class="badge bg-warning">{{ motorista.get_status_display }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ motorista.get_status_display }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center table-actions">
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'drivers:motorista_update' motorista.pk %}"
+                                                       class="btn btn-outline-primary"
+                                                       title="Editar motorista"
+                                                       data-bs-toggle="tooltip">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a href="{% url 'drivers:motorista_delete' motorista.pk %}"
+                                                       class="btn btn-outline-danger"
+                                                       title="Excluir motorista"
+                                                       data-bs-toggle="tooltip">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                    <button type="button"
+                                                            class="btn btn-outline-info"
+                                                            title="Ver detalhes"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalDetalhes{{ motorista.id }}">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Modal de Detalhes -->
+                                        <div class="modal fade" id="modalDetalhes{{ motorista.id }}" tabindex="-1">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-primary text-white">
+                                                        <h5 class="modal-title">
+                                                            <i class="bi bi-person-badge"></i> Detalhes do Motorista
+                                                        </h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row">
+                                                            <div class="col-md-4 text-center">
+                                                                {% if motorista.foto %}
+                                                                    <img src="{{ motorista.foto.url }}"
+                                                                         class="img-thumbnail mb-3"
+                                                                         style="max-width: 200px;"
+                                                                         alt="Foto do motorista">
+                                                                {% else %}
+                                                                    <div class="bg-light rounded p-5 mb-3">
+                                                                        <i class="bi bi-person display-1 text-muted"></i>
+                                                                        <p class="text-muted mt-2">Sem foto</p>
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="col-md-8">
+                                                                <div class="row">
+                                                                    <div class="col-6">
+                                                                        <strong>ID:</strong><br>
+                                                                        <strong>Nome:</strong><br>
+                                                                        <strong>CPF:</strong><br>
+                                                                        <strong>Data Nasc.:</strong><br>
+                                                                        <strong>Idade:</strong><br>
+                                                                        <strong>Telefone:</strong><br>
+                                                                        <strong>E-mail:</strong>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        {{ motorista.id }}<br>
+                                                                        {{ motorista.nome_completo|default:"Não informado" }}<br>
+                                                                        {{ motorista.cpf_formatado }}<br>
+                                                                        {{ motorista.data_nascimento|date:"d/m/Y" }}<br>
+                                                                        {{ motorista.idade }} anos<br>
+                                                                        {{ motorista.telefone|default:"Não informado" }}<br>
+                                                                        {{ motorista.email|default:"Não informado" }}
+                                                                    </div>
+                                                                </div>
+                                                                <hr>
+                                                                <div class="row">
+                                                                    <div class="col-6">
+                                                                        <strong>Cidade/UF:</strong><br>
+                                                                        <strong>CNH:</strong><br>
+                                                                        <strong>Categoria:</strong><br>
+                                                                        <strong>Status:</strong><br>
+                                                                        <strong>Data Admissão:</strong>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        {{ motorista.cidade|default:"-" }}/{{ motorista.estado|default:"-" }}<br>
+                                                                        {{ motorista.cnh_numero|default:"Não informada" }}<br>
+                                                                        {{ motorista.cnh_categoria|default:"-" }}<br>
+                                                                        {{ motorista.get_status_display }}<br>
+                                                                        {{ motorista.data_admissao|date:"d/m/Y"|default:"Não informada" }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <a href="{% url 'drivers:motorista_update' motorista.pk %}" class="btn btn-warning">
+                                                            <i class="bi bi-pencil"></i> Editar
+                                                        </a>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Paginação -->
+                            {% if is_paginated %}
+                            <nav aria-label="Page navigation" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Anterior</a>
+                                    </li>
+                                    {% endif %}
+
+                                    {% for i in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == i %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ i }}</span>
+                                        </li>
+                                        {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ i }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ i }}</a>
+                                        </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Próxima</a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                            {% endif %}
+
+                        {% else %}
+                            <!-- Mensagem quando não há motoristas -->
+                            <div class="text-center py-5">
+                                <i class="bi bi-people display-1 text-muted"></i>
+                                <h3 class="text-muted mt-3">Nenhum motorista encontrado</h3>
+                                <p class="text-muted">Não há motoristas cadastrados que correspondam aos seus critérios de busca.</p>
+                                <a href="{% url 'drivers:cadastro_motorista' %}" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-person-plus"></i> Cadastrar Primeiro Motorista
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><span class="text-warning">Motorista</span>Power</h5>
+                    <p class="mb-0">Sistema profissional de gestão de motoristas</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">&copy; 2024 MotoristaPower. Todos os direitos reservados.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Ativar tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        });
+    </script>
+</body>
+</html>

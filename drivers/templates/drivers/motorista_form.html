@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if form.instance.pk %}Editar Motorista{% else %}Cadastrar Motorista{% endif %} - MotoristaPower</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Bibliotecas para máscaras -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <style>
+        .form-container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .required label:after {
+            content: " *";
+            color: #dc3545;
+        }
+        .photo-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            border: 2px solid #dee2e6;
+        }
+        .section-title {
+            color: #0d6efd;
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        .btn-custom {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .field-error {
+            border-color: #dc3545 !important;
+            background-color: #fff5f5;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+        .success-border {
+            border-color: #198754 !important;
+        }
+        .loading-spinner {
+            display: none;
+            color: #0d6efd;
+        }
+        .cpf-status {
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+        .cpf-valid {
+            color: #198754;
+        }
+        .cpf-invalid {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body style="background-color: #f8f9fa;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'drivers:dashboard' %}">
+                🚗 MotoristaPower
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'drivers:dashboard' %}">
+                            <i class="fas fa-chart-bar"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'drivers:motorista_list' %}">
+                            <i class="fas fa-list"></i> Lista de Motoristas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'drivers:cadastro_motorista' %}">
+                            <i class="fas fa-plus"></i> Novo Motorista
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <div class="form-container">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    {% if form.instance.pk %}
+                        <i class="fas fa-edit text-primary"></i> Editar Motorista
+                    {% else %}
+                        <i class="fas fa-user-plus text-success"></i> Cadastrar Novo Motorista
+                    {% endif %}
+                </h2>
+                <a href="{% url 'drivers:motorista_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Voltar para Lista
+                </a>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas
+                                {% if message.tags == 'success' %}fa-check-circle
+                                {% elif message.tags == 'error' %}fa-exclamation-circle
+                                {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                                {% else %}fa-info-circle{% endif %}
+                                me-2"></i>
+                            {{ message }}
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Form -->
+            <form method="post" enctype="multipart/form-data" novalidate id="motoristaForm">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="row">
+                    <!-- Coluna 1: Dados Pessoais e Foto -->
+                    <div class="col-lg-6">
+                        <!-- Foto -->
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="section-title">
+                                    <i class="fas fa-camera"></i> Foto do Motorista
+                                </h5>
+                                <div class="mb-3">
+                                    <label for="{{ form.foto.id_for_label }}" class="form-label fw-semibold">{{ form.foto.label }}</label>
+                                    {{ form.foto }}
+                                    {% if form.foto.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.foto.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Formatos: JPG, JPEG, PNG, GIF | Máx: 5MB</div>
+                                </div>
+
+                                <!-- Preview da Foto -->
+                                {% if form.instance.foto %}
+                                    <div class="mt-3 text-center">
+                                        <p class="fw-semibold">Foto Atual:</p>
+                                        <img src="{{ form.instance.foto.url }}" alt="Foto atual" class="photo-preview">
+                                    </div>
+                                {% endif %}
+                                <div id="fotoPreview" class="mt-3 text-center" style="display: none;">
+                                    <p class="fw-semibold">Pré-visualização:</p>
+                                    <img id="previewImage" class="photo-preview">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dados Pessoais -->
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="section-title">
+                                    <i class="fas fa-id-card"></i> Dados Pessoais
+                                </h5>
+
+                                <!-- Nome Completo -->
+                                <div class="mb-3 required">
+                                    <label for="{{ form.nome_completo.id_for_label }}" class="form-label fw-semibold">{{ form.nome_completo.label }}</label>
+                                    {{ form.nome_completo }}
+                                    {% if form.nome_completo.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.nome_completo.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- CPF -->
+                                <div class="mb-3 required">
+                                    <label for="{{ form.cpf.id_for_label }}" class="form-label fw-semibold">{{ form.cpf.label }}</label>
+                                    <div class="input-group">
+                                        {{ form.cpf }}
+                                        <span class="input-group-text">
+                                            <i class="fas fa-id-card"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.cpf.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.cpf.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div id="cpfStatus" class="cpf-status"></div>
+                                    <div class="form-text">Digite o CPF com 11 dígitos</div>
+                                </div>
+
+                                <!-- Data Nascimento -->
+                                <div class="mb-3 required">
+                                    <label for="{{ form.data_nascimento.id_for_label }}" class="form-label fw-semibold">{{ form.data_nascimento.label }}</label>
+                                    <div class="input-group">
+                                        {{ form.data_nascimento }}
+                                        <span class="input-group-text">
+                                            <i class="fas fa-calendar-alt"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.data_nascimento.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.data_nascimento.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Formato: DD/MM/AAAA</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna 2: Contato, Endereço e Profissional -->
+                    <div class="col-lg-6">
+                        <!-- Contato -->
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="section-title">
+                                    <i class="fas fa-address-book"></i> Contato
+                                </h5>
+
+                                <!-- Email -->
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">{{ form.email.label }}</label>
+                                    <div class="input-group">
+                                        {{ form.email }}
+                                        <span class="input-group-text">
+                                            <i class="fas fa-envelope"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.email.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.email.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Telefone -->
+                                <div class="mb-3">
+                                    <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">{{ form.telefone.label }}</label>
+                                    <div class="input-group">
+                                        {{ form.telefone }}
+                                        <span class="input-group-text">
+                                            <i class="fas fa-phone"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.telefone.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.telefone.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Endereço -->
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="section-title">
+                                    <i class="fas fa-map-marker-alt"></i> Endereço
+                                </h5>
+
+                                <!-- Cidade -->
+                                <div class="mb-3">
+                                    <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">{{ form.cidade.label }}</label>
+                                    {{ form.cidade }}
+                                    {% if form.cidade.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.cidade.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Estado -->
+                                <div class="mb-3">
+                                    <label for="{{ form.estado.id_for_label }}" class="form-label fw-semibold">{{ form.estado.label }}</label>
+                                    {{ form.estado }}
+                                    {% if form.estado.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.estado.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documentação e Profissional -->
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="section-title">
+                                    <i class="fas fa-file-alt"></i> Documentação
+                                </h5>
+
+                                <!-- CNH Número -->
+                                <div class="mb-3">
+                                    <label for="{{ form.cnh_numero.id_for_label }}" class="form-label fw-semibold">{{ form.cnh_numero.label }}</label>
+                                    <div class="input-group">
+                                        {{ form.cnh_numero }}
+                                        <span class="input-group-text">
+                                            <i class="fas fa-id-card"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.cnh_numero.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.cnh_numero.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- CNH Categoria -->
+                                <div class="mb-3">
+                                    <label for="{{ form.cnh_categoria.id_for_label }}" class="form-label fw-semibold">{{ form.cnh_categoria.label }}</label>
+                                    {{ form.cnh_categoria }}
+                                    {% if form.cnh_categoria.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.cnh_categoria.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Data Admissão -->
+                                <div class="mb-3">
+                                    <label for="{{ form.data_admissao.id_for_label }}" class="form-label fw-semibold">{{ form.data_admissao.label }}</label>
+                                    <div class="input-group">
+                                        {{ form.data_admissao }}
+                                        <span class="input-group-text">
+                                            <i class="fas fa-calendar-day"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.data_admissao.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.data_admissao.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Formato: DD/MM/AAAA</div>
+                                </div>
+
+                                <!-- Salário -->
+                                <div class="mb-3">
+                                    <label for="{{ form.salario.id_for_label }}" class="form-label fw-semibold">{{ form.salario.label }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        {{ form.salario }}
+                                    </div>
+                                    {% if form.salario.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.salario.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Status -->
+                                <div class="mb-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">{{ form.status.label }}</label>
+                                    {{ form.status }}
+                                    {% if form.status.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.status.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'drivers:motorista_list' %}" class="btn btn-outline-secondary btn-custom">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+
+                            <div class="d-flex gap-2">
+                                {% if form.instance.pk %}
+                                    <a href="{% url 'drivers:motorista_delete' form.instance.pk %}" class="btn btn-danger btn-custom">
+                                        <i class="fas fa-trash"></i> Excluir
+                                    </a>
+                                {% endif %}
+                                <button type="submit" class="btn btn-success btn-custom" id="submitBtn">
+                                    {% if form.instance.pk %}
+                                        <i class="fas fa-save"></i> Atualizar Motorista
+                                    {% else %}
+                                        <i class="fas fa-check"></i> Cadastrar Motorista
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aplicar máscaras quando jQuery estiver disponível
+            if (typeof $ !== 'undefined') {
+                // CPF
+                $('#{{ form.cpf.id_for_label }}').mask('000.000.000-00');
+
+                // Telefone (ajusta para celular ou fixo)
+                var SPMaskBehavior = function (val) {
+                    return val.replace(/\D/g, '').length === 11 ? '(00) 00000-0000' : '(00) 0000-00009';
+                };
+                var spOptions = {
+                    onKeyPress: function(val, e, field, options) {
+                        field.mask(SPMaskBehavior.apply({}, arguments), options);
+                    }
+                };
+                $('#{{ form.telefone.id_for_label }}').mask(SPMaskBehavior, spOptions);
+
+                // Datas
+                $('#{{ form.data_nascimento.id_for_label }}').mask('00/00/0000');
+                $('#{{ form.data_admissao.id_for_label }}').mask('00/00/0000');
+
+                // Salário
+                $('#{{ form.salario.id_for_label }}').mask('#.##0,00', {
+                    reverse: true,
+                    translation: {
+                        '#': { pattern: /\d/ }
+                    }
+                });
+            }
+
+            // Elementos DOM
+            const cpfField = document.getElementById('{{ form.cpf.id_for_label }}');
+            const cpfStatus = document.getElementById('cpfStatus');
+            const dataNascimentoField = document.getElementById('{{ form.data_nascimento.id_for_label }}');
+            const dataAdmissaoField = document.getElementById('{{ form.data_admissao.id_for_label }}');
+            const fotoField = document.getElementById('{{ form.foto.id_for_label }}');
+            const previewContainer = document.getElementById('fotoPreview');
+            const previewImage = document.getElementById('previewImage');
+            const submitBtn = document.getElementById('submitBtn');
+            const form = document.getElementById('motoristaForm');
+
+            // Função para validar CPF
+            function validarCPF(cpf) {
+                cpf = cpf.replace(/[^\d]+/g, '');
+
+                if (cpf.length !== 11) return false;
+                if (/^(\d)\1+$/.test(cpf)) return false;
+
+                let soma = 0, resto;
+
+                // Primeiro dígito verificador
+                for (let i = 1; i <= 9; i++) {
+                    soma += parseInt(cpf.substring(i-1, i)) * (11 - i);
+                }
+                resto = (soma * 10) % 11;
+                if (resto === 10 || resto === 11) resto = 0;
+                if (resto !== parseInt(cpf.substring(9, 10))) return false;
+
+                // Segundo dígito verificador
+                soma = 0;
+                for (let i = 1; i <= 10; i++) {
+                    soma += parseInt(cpf.substring(i-1, i)) * (12 - i);
+                }
+                resto = (soma * 10) % 11;
+                if (resto === 10 || resto === 11) resto = 0;
+                if (resto !== parseInt(cpf.substring(10, 11))) return false;
+
+                return true;
+            }
+
+            // Validação de CPF em tempo real
+            if (cpfField) {
+                cpfField.addEventListener('input', function(e) {
+                    const cpf = e.target.value.replace(/\D/g, '');
+
+                    if (cpf.length === 11) {
+                        if (validarCPF(cpf)) {
+                            cpfStatus.innerHTML = '<i class="fas fa-check-circle"></i> CPF válido';
+                            cpfStatus.className = 'cpf-status cpf-valid';
+                            cpfField.classList.remove('field-error');
+                            cpfField.classList.add('success-border');
+                        } else {
+                            cpfStatus.innerHTML = '<i class="fas fa-times-circle"></i> CPF inválido';
+                            cpfStatus.className = 'cpf-status cpf-invalid';
+                            cpfField.classList.add('field-error');
+                            cpfField.classList.remove('success-border');
+                        }
+                    } else {
+                        cpfStatus.innerHTML = '';
+                        cpfField.classList.remove('field-error', 'success-border');
+                    }
+                });
+
+                cpfField.addEventListener('blur', function(e) {
+                    const cpf = e.target.value.replace(/\D/g, '');
+                    if (cpf.length > 0 && cpf.length < 11) {
+                        cpfStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> CPF incompleto';
+                        cpfStatus.className = 'cpf-status cpf-invalid';
+                        cpfField.classList.add('field-error');
+                    }
+                });
+            }
+
+            // Função para validar data
+            function validarData(dataStr) {
+                const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+                if (!regex.test(dataStr)) return false;
+
+                const [, dia, mes, ano] = dataStr.match(regex);
+                const data = new Date(ano, mes - 1, dia);
+
+                return data.getDate() == dia &&
+                       data.getMonth() == mes - 1 &&
+                       data.getFullYear() == ano;
+            }
+
+            // Função para calcular idade a partir da data
+            function calcularIdade(dataStr) {
+                if (!validarData(dataStr)) return null;
+
+                const [, dia, mes, ano] = dataStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                const nascimento = new Date(ano, mes - 1, dia);
+                const hoje = new Date();
+
+                let idade = hoje.getFullYear() - nascimento.getFullYear();
+                const mesAtual = hoje.getMonth();
+                const diaAtual = hoje.getDate();
+
+                if (mesAtual < nascimento.getMonth() ||
+                    (mesAtual === nascimento.getMonth() && diaAtual < nascimento.getDate())) {
+                    idade--;
+                }
+
+                return idade;
+            }
+
+            // Validação de data de nascimento
+            if (dataNascimentoField) {
+                dataNascimentoField.addEventListener('blur', function(e) {
+                    if (e.target.value) {
+                        if (!validarData(e.target.value)) {
+                            showFieldError(dataNascimentoField, 'Data inválida. Use DD/MM/AAAA.');
+                        } else {
+                            const idade = calcularIdade(e.target.value);
+                            if (idade !== null) {
+                                if (idade < 18) {
+                                    showFieldError(dataNascimentoField, 'Motorista deve ter pelo menos 18 anos.');
+                                } else if (idade > 100) {
+                                    showFieldError(dataNascimentoField, 'Idade inválida.');
+                                } else {
+                                    clearFieldError(dataNascimentoField);
+                                    // Mostra a idade calculada
+                                    const existingAgeInfo = dataNascimentoField.parentNode.querySelector('.age-info');
+                                    if (existingAgeInfo) {
+                                        existingAgeInfo.remove();
+                                    }
+                                    const ageInfo = document.createElement('div');
+                                    ageInfo.className = 'form-text text-success';
+                                    ageInfo.innerHTML = `<i class="fas fa-user"></i> Idade: ${idade} anos`;
+                                    dataNascimentoField.parentNode.appendChild(ageInfo);
+                                }
+                            }
+                        }
+                    } else {
+                        clearFieldError(dataNascimentoField);
+                    }
+                });
+            }
+
+            // Validação de data de admissão
+            if (dataAdmissaoField) {
+                dataAdmissaoField.addEventListener('blur', function(e) {
+                    if (e.target.value) {
+                        if (!validarData(e.target.value)) {
+                            showFieldError(dataAdmissaoField, 'Data inválida. Use DD/MM/AAAA.');
+                        } else {
+                            clearFieldError(dataAdmissaoField);
+                        }
+                    }
+                });
+            }
+
+            // Preview da foto
+            if (fotoField) {
+                fotoField.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        // Validação do tipo de arquivo
+                        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!validTypes.includes(file.type)) {
+                            alert('❌ Tipo de arquivo inválido. Use JPG, PNG ou GIF.');
+                            e.target.value = '';
+                            return;
+                        }
+
+                        // Validação do tamanho do arquivo (5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('❌ Arquivo muito grande. Máximo 5MB permitido.');
+                            e.target.value = '';
+                            return;
+                        }
+
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImage.src = e.target.result;
+                            previewContainer.style.display = 'block';
+                        }
+                        reader.readAsDataURL(file);
+                    } else {
+                        previewContainer.style.display = 'none';
+                    }
+                });
+            }
+
+            // Funções auxiliares para mostrar/limpar erros
+            function showFieldError(field, message) {
+                field.classList.add('field-error');
+                const existingError = field.parentNode.querySelector('.field-error-message');
+                if (existingError) {
+                    existingError.remove();
+                }
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message field-error-message';
+                errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                field.parentNode.appendChild(errorDiv);
+            }
+
+            function clearFieldError(field) {
+                field.classList.remove('field-error');
+                const existingError = field.parentNode.querySelector('.field-error-message');
+                if (existingError) {
+                    existingError.remove();
+                }
+            }
+
+            // Validação antes do envio do formulário
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    let hasErrors = false;
+
+                    // Validar CPF
+                    if (cpfField && cpfField.value) {
+                        const cpf = cpfField.value.replace(/\D/g, '');
+                        if (!validarCPF(cpf)) {
+                            showFieldError(cpfField, 'CPF inválido. Verifique o número.');
+                            hasErrors = true;
+                        }
+                    }
+
+                    // Validar data de nascimento
+                    if (dataNascimentoField && dataNascimentoField.value) {
+                        if (!validarData(dataNascimentoField.value)) {
+                            showFieldError(dataNascimentoField, 'Data de nascimento inválida.');
+                            hasErrors = true;
+                        } else {
+                            const idade = calcularIdade(dataNascimentoField.value);
+                            if (idade < 18) {
+                                showFieldError(dataNascimentoField, 'Motorista deve ter pelo menos 18 anos.');
+                                hasErrors = true;
+                            }
+                        }
+                    }
+
+                    // Validar data de admissão
+                    if (dataAdmissaoField && dataAdmissaoField.value) {
+                        if (!validarData(dataAdmissaoField.value)) {
+                            showFieldError(dataAdmissaoField, 'Data de admissão inválida.');
+                            hasErrors = true;
+                        }
+                    }
+
+                    // Validar se data de admissão é posterior à data de nascimento
+                    if (dataNascimentoField.value && dataAdmissaoField.value) {
+                        const nascimento = new Date(
+                            dataNascimentoField.value.split('/').reverse().join('-')
+                        );
+                        const admissao = new Date(
+                            dataAdmissaoField.value.split('/').reverse().join('-')
+                        );
+
+                        if (admissao < nascimento) {
+                            showFieldError(dataAdmissaoField, 'Data de admissão não pode ser anterior à data de nascimento.');
+                            hasErrors = true;
+                        }
+                    }
+
+                    if (hasErrors) {
+                        e.preventDefault();
+                        // Rolar para o primeiro erro
+                        const firstError = form.querySelector('.field-error');
+                        if (firstError) {
+                            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        alert('❌ Por favor, corrija os erros destacados em vermelho antes de enviar.');
+                    } else {
+                        // Desabilitar botão de envio para evitar duplo clique
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+                        }
+                    }
+                });
+            }
+
+            // Melhoria: Foco automático no primeiro campo
+            const firstInput = form.querySelector('input:not([type="hidden"])');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        });
+
+        // Melhoria para mobile: ajustar foco em inputs
+        document.addEventListener('touchstart', function() {
+            // Forçar foco suave em mobile
+            const inputs = document.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    setTimeout(() => {
+                        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

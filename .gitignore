@@ -1,0 +1,46 @@
+﻿# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+db.sqlite3
+media/
+
+# Environment variables
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Static files (serão coletados no deploy)
+/staticfiles/
+
+# Backup files
+*.bak
+*.backup
+
+# Logs
+logs/
+*.log
+
+# Temp files
+temp/
+tmp/
+
+# Selenium
+whatsapp_session/
+*.json
+
+# Database (não versionar o SQLite)
+*.sqlite3

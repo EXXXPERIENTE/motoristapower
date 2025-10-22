@@ -1,0 +1,36 @@
+{% extends "drivers/base.html" %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+<div class="card shadow-lg border-danger">
+    <div class="card-header bg-danger text-white text-center py-3">
+        <h1 class="h4 mb-0">Confirmação de Exclusão</h1>
+    </div>
+    <div class="card-body p-4">
+        <p class="lead text-center">
+            Você tem certeza que deseja **EXCLUIR** o motorista abaixo?
+        </p>
+
+        <div class="alert alert-warning text-center fw-bold">
+            Motorista: {{ motorista.nome }} (CPF: {{ motorista.cpf }})
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-danger btn-lg">
+                    SIM, EXCLUIR PERMANENTEMENTE
+                </button>
+            </div>
+
+            <div class="text-center mt-3">
+                <a href="{% url 'drivers:motorista_list' %}" class="btn btn-outline-secondary">
+                    Cancelar e Voltar para a Lista
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
