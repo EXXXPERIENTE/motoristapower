@@ -11,7 +11,7 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', '79j4zgzhnzj05hgcw&ua1&00iy0ah53f3(@dgg(d*mt@&&-xa)')
+SECRET_KEY = os.environ.get('p#9)ku$3b2fqi!pxilsx$g&ps!3#yhqpm+gwzdd0isb&srhf6n')
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # Hosts permitidos
