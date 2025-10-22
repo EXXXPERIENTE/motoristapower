@@ -1,49 +1,33 @@
-"""
-URL configuration for fleet project.
-REDIRECIONA DIRETO PARA O CADASTRO
-"""
-
 from django.contrib import admin
 from django.urls import path, include
-from django.shortcuts import redirect
-from django.conf import settings
-from django.conf.urls.static import static
+from django.http import HttpResponse
 
-
-# View para redirecionar para o cadastro
-def redirect_to_cadastro(request):
-    """
-    Redireciona a página inicial direto para o cadastro de motoristas
-    """
-    return redirect('drivers:cadastro_motorista')
-
+def home(request):
+    return HttpResponse("""
+    <html>
+    <head>
+        <title>🚗 MotoristaPower - Sistema de Frota</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            h1 { color: #2c3e50; }
+            a { color: #3498db; text-decoration: none; margin: 0 10px; }
+            a:hover { text-decoration: underline; }
+        </style>
+    </head>
+    <body>
+        <h1>🚗 MotoristaPower - Sistema de Frota</h1>
+        <p>✅ Site está funcionando perfeitamente no Railway!</p>
+        <div>
+            <a href="/admin/">Painel Admin</a> | 
+            <a href="/drivers/">Gestão de Motoristas</a>
+        </div>
+        <p><small>Deploy realizado com sucesso! 🎉</small></p>
+    </body>
+    </html>
+    """)
 
 urlpatterns = [
-    # 🔧 Admin Django
     path('admin/', admin.site.urls),
-
-    # 🚗 Página inicial redireciona para cadastro
-    path('', redirect_to_cadastro, name='home'),
-
-    # 🚗 App Drivers
-    path('', include('drivers.urls', namespace='drivers')),
+    path('drivers/', include('drivers.urls')),
+    path('', home, name='home'),
 ]
-
-# 🔧 Configurações para desenvolvimento
-if settings.DEBUG:
-    # Servir arquivos de mídia durante o desenvolvimento
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-    # Servir arquivos estáticos durante o desenvolvimento
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-# 🎯 Personalização do Admin
-admin.site.site_header = '🚗 MotoristaPower - Administração'
-admin.site.site_title = 'MotoristaPower Admin'
-admin.site.index_title = 'Painel de Controle do Sistema'
-
-print("✅ URLs configuradas - REDIRECIONANDO PARA CADASTRO")
-print("   🏠 Página inicial → Cadastro de motoristas")
-print("   🔧 Admin: /admin/")
-print("   🚗 Drivers: /")
-print("   📁 Mídia: /media/")
