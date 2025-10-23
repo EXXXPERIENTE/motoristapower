@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{% block title %}MotoristaPower{% endblock title %}</title>
+
+    <!-- Incluindo Tailwind CSS e Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* Reset para mobile */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+        }
+
+        /* Barra lateral */
+        .sidebar {
+            min-width: 250px;
+            background-color: #374151;
+            color: white;
+            transition: transform 0.3s ease-in-out;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .content {
+            transition: margin-left 0.3s;
+            min-height: 100vh;
+        }
+
+        /* Overlay para mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+
+        /* Configuração mobile */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100%;
+                z-index: 50;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .content {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .mobile-toggle {
+                display: block;
+                position: fixed;
+                top: 1rem;
+                left: 1rem;
+                z-index: 60;
+                background-color: #374151;
+                color: white;
+                padding: 0.75rem;
+                border-radius: 0.5rem;
+                cursor: pointer;
+                border: none;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+
+            /* Melhorar toque em mobile */
+            a, button {
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .sidebar a {
+                padding: 1rem;
+                font-size: 1rem;
+                border-bottom: 1px solid #4b5563;
+            }
+        }
+
+        /* Desktop */
+        @media (min-width: 769px) {
+            .sidebar {
+                transform: translateX(0) !important;
+                position: relative !important;
+            }
+
+            .content {
+                margin-left: 0;
+                flex: 1;
+            }
+
+            .mobile-toggle {
+                display: none !important;
+            }
+
+            .sidebar-overlay {
+                display: none !important;
+            }
+        }
+
+        /* Melhorias de acessibilidade */
+        .sidebar a:focus {
+            outline: 2px solid #fbbf24;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <!-- Overlay para fechar sidebar no mobile -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- Ícone Mobile para abrir menu -->
+    <button id="mobile-toggle" class="mobile-toggle hidden" aria-label="Abrir menu">
+        <i class="fas fa-bars text-lg"></i>
+    </button>
+
+    <!-- BARRA LATERAL -->
+    <div id="sidebar" class="sidebar flex-col p-4 md:p-6 shadow-xl">
+        <div class="text-2xl font-extrabold mb-8 text-yellow-400 text-center md:text-left">
+            <i class="fas fa-car mr-2"></i>MotoristaPower
+        </div>
+
+        <div class="flex-grow">
+            <nav class="space-y-1 md:space-y-2">
+
+                <!-- Dashboard -->
+                <a href="{% url 'drivers:dashboard' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-600 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-700 border-l-4 border-yellow-400{% endif %}">
+                    <i class="fas fa-home w-6 text-center mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <!-- Listar Motoristas -->
+                <a href="{% url 'drivers:motorista_list' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-600 transition-colors {% if request.resolver_match.url_name == 'motorista_list' %}bg-gray-700 border-l-4 border-yellow-400{% endif %}">
+                    <i class="fas fa-users w-6 text-center mr-3"></i>
+                    <span>Motoristas</span>
+                </a>
+
+                <!-- Cadastrar Motorista -->
+                <a href="{% url 'drivers:motorista_create' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-600 transition-colors {% if request.resolver_match.url_name == 'motorista_create' or request.resolver_match.url_name == 'motorista_update' %}bg-gray-700 border-l-4 border-yellow-400{% endif %}">
+                    <i class="fas fa-user-plus w-6 text-center mr-3"></i>
+                    <span>Cadastro</span>
+                </a>
+
+                <!-- Relatórios (Apenas Staff/Admin) -->
+                {% if user.is_authenticated and user.is_staff %}
+                <a href="{% url 'drivers:relatorios' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-600 transition-colors {% if 'relatorio' in request.resolver_match.url_name %}bg-gray-700 border-l-4 border-yellow-400{% endif %}">
+                    <i class="fas fa-chart-line w-6 text-center mr-3"></i>
+                    <span>Relatórios</span>
+                </a>
+                {% endif %}
+
+            </nav>
+        </div>
+
+        <!-- Informações do Usuário e Logout -->
+        <div class="mt-6 pt-6 border-t border-gray-600">
+            {% if user.is_authenticated %}
+                <div class="mb-4">
+                    <p class="text-sm font-semibold text-gray-300">
+                        Logado como:
+                    </p>
+                    <p class="text-yellow-400 font-bold text-sm mt-1">
+                        {% if user.is_staff %}
+                            <i class="fas fa-crown mr-1"></i>ADMIN
+                        {% else %}
+                            <i class="fas fa-user mr-1"></i>{{ user.username|default:"Usuário" }}
+                        {% endif %}
+                    </p>
+                </div>
+
+                <!-- Botão de Logout CORRIGIDO -->
+                <a href="{% url 'logout' %}" class="flex items-center p-3 rounded-lg text-red-300 hover:bg-red-700 hover:text-white transition-colors">
+                    <i class="fas fa-sign-out-alt w-6 text-center mr-3"></i>
+                    <span>Sair</span>
+                </a>
+            {% else %}
+                <div class="mb-4">
+                    <p class="text-sm font-semibold text-gray-300">Visitante</p>
+                </div>
+                <a href="{% url 'login' %}" class="flex items-center p-3 rounded-lg text-green-300 hover:bg-green-700 hover:text-white transition-colors">
+                    <i class="fas fa-sign-in-alt w-6 text-center mr-3"></i>
+                    <span>Login</span>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main id="main-content" class="flex-1 w-full md:w-auto content p-4 md:p-8">
+        <!-- Mensagens do Django -->
+        {% if messages %}
+            <div class="mb-6 space-y-3">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg shadow-sm border-l-4 flex items-start
+                        {% if message.tags == 'success' %}bg-green-50 border-green-500 text-green-700
+                        {% elif message.tags == 'error' %}bg-red-50 border-red-500 text-red-700
+                        {% elif message.tags == 'warning' %}bg-yellow-50 border-yellow-500 text-yellow-700
+                        {% else %}bg-blue-50 border-blue-500 text-blue-700
+                        {% endif %}">
+                        <i class="fas mt-1 mr-3
+                        {% if message.tags == 'success' %}fa-check-circle
+                        {% elif message.tags == 'error' %}fa-times-circle
+                        {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                        {% else %}fa-info-circle
+                        {% endif %}"></i>
+                        <div class="flex-1">
+                            {{ message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Conteúdo da página -->
+        <div class="bg-white rounded-xl shadow-sm p-6 md:p-8">
+            {% block content %}
+            <!-- Conteúdo específico da página -->
+            {% endblock content %}
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.getElementById('mobile-toggle');
+            const overlay = document.getElementById('sidebar-overlay');
+            const mainContent = document.getElementById('main-content');
+
+            // Inicialização
+            function initializeLayout() {
+                const isMobile = window.innerWidth < 769;
+
+                if (isMobile) {
+                    // Mobile: esconde sidebar, mostra toggle
+                    sidebar.classList.remove('open');
+                    sidebar.style.transform = 'translateX(-100%)';
+                    toggleButton.classList.remove('hidden');
+                    overlay.classList.remove('active');
+                } else {
+                    // Desktop: mostra sidebar, esconde toggle
+                    sidebar.style.transform = 'translateX(0)';
+                    toggleButton.classList.add('hidden');
+                    overlay.classList.remove('active');
+                }
+            }
+
+            // Toggle sidebar mobile
+            function toggleSidebar() {
+                const isOpen = sidebar.classList.contains('open');
+
+                if (isOpen) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                } else {
+                    sidebar.classList.add('open');
+                    overlay.classList.add('active');
+                }
+            }
+
+            // Event Listeners
+            if (toggleButton) {
+                toggleButton.addEventListener('click', toggleSidebar);
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', toggleSidebar);
+            }
+
+            // Fechar sidebar ao clicar em links (mobile)
+            sidebar.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 769) {
+                        toggleSidebar();
+                    }
+                });
+            });
+
+            // Redimensionamento
+            window.addEventListener('resize', initializeLayout);
+
+            // Inicializar
+            initializeLayout();
+
+            // Debug helper
+            console.log('✅ Layout inicializado');
+            console.log('📱 Mobile:', window.innerWidth < 769);
+        });
+    </script>
+</body>
+</html>
