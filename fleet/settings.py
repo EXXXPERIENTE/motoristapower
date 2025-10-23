@@ -1,6 +1,6 @@
 """
 Django settings for fleet project.
-CONFIGURADO PARA RAILWAY - VERSÃO CORRIGIDA COM FALLBACKS
+VERSÃO CORRIGIDA - MOBILE COMPATIBLE
 """
 
 import os
@@ -9,17 +9,11 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ✅ Configurações para produção COM FALLBACKS SEGUROS
-try:
-    from decouple import config
-    SECRET_KEY = config('SECRET_KEY', default='fallback-key-change-in-production')
-    DEBUG = config('DEBUG', default=False, cast=bool)
-except ImportError:
-    # Fallback se python-decouple não estiver instalado
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key-change-in-production')
-    DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+# ✅ CONFIGURAÇÃO OTIMIZADA
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-# ✅ Hosts permitidos para deploy
+# ✅ Hosts permitidos
 ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
@@ -30,7 +24,7 @@ ALLOWED_HOSTS = [
     'motoristapower.up.railway.app',
     '.up.railway.app',
     'dynamic-grace.up.railway.app',
-    'web-production-bda2e.up.railway.app',  # ✅ SEU DOMÍNIO ATUAL
+    'web-production-bda2e.up.railway.app',
 ]
 
 # ✅ Application definition
@@ -45,7 +39,7 @@ INSTALLED_APPS = [
     'drivers.apps.DriversConfig',
 ]
 
-# ✅ Middleware para produção
+# ✅ Middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -77,26 +71,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'fleet.wsgi.application'
 
-# ✅ Database para produção
+# ✅ Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-# ✅ Configuração para PostgreSQL em produção (com fallback)
-try:
-    import dj_database_url
-    if 'DATABASE_URL' in os.environ:
-        DATABASES['default'] = dj_database_url.config(
-            conn_max_age=600,
-            conn_health_checks=True,
-            ssl_require=True
-        )
-except ImportError:
-    # Fallback se dj-database-url não estiver instalado
-    pass
 
 # ✅ Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -125,7 +106,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
-# ✅ Whitenoise para servir arquivos estáticos
+# ✅ Whitenoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ✅ Media files
@@ -135,22 +116,89 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ✅ Default primary key
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# 🔑 CONFIGURAÇÕES DE AUTENTICAÇÃO
+# ✅ Authentication
 LOGIN_REDIRECT_URL = 'drivers:dashboard'
 LOGIN_URL = 'login'
+LOGOUT_REDIRECT_URL = 'login'
 
-# ✅ Segurança para produção
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+# ✅ 🔥 CORREÇÕES CRÍTICAS PARA MOBILE 🔥
+
+# Configurações de sessão para mobile compatibility
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 1209600  # 2 semanas
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'  # Compatível com mobile
+
+# CSRF settings para mobile
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False  # Permite JavaScript access
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Security settings diferenciados para dev/prod
+if DEBUG:
+    # Desenvolvimento - menos restritivo para testing
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
+else:
+    # Produção - máximo de segurança
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
-# ✅ Configuração para Railway
+# ✅ Railway config
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-print("✅ MotoristaPower Configurado para Railway!")
-print(f"🔧 Modo: {'DESENVOLVIMENTO' if DEBUG else 'PRODUÇÃO'}")
-print(f"🌐 Hosts: {ALLOWED_HOSTS}")
-print(f"🗄️  Database: {DATABASES['default']['ENGINE']}")
+# ✅ Backend de autenticação customizado (se necessário)
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# ✅ Configurações de senha
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
+
+# ✅ Logging para debug
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO' if DEBUG else 'WARNING',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO' if DEBUG else 'WARNING',
+            'propagate': False,
+        },
+    },
+}
+
+# ✅ Debug information
+print("=" * 60)
+print("🚀 MotoristaPower - Configuração Otimizada Carregada!")
+print(f"🔧 DEBUG: {DEBUG}")
+print(f"🌐 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+print(f"📱 Mobile Compatible: True")
+print(f"🔐 CSRF Cookie Secure: {CSRF_COOKIE_SECURE}")
+print(f"🔐 Session Cookie Secure: {SESSION_COOKIE_SECURE}")
+print("=" * 60)
+
+# ✅ Criar diretórios automaticamente se não existirem
+os.makedirs(STATIC_ROOT, exist_ok=True)
+os.makedirs(BASE_DIR / 'static', exist_ok=True)
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+os.makedirs(BASE_DIR / 'templates', exist_ok=True)
