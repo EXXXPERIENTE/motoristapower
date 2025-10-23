@@ -1,19 +1,23 @@
 """
 Django settings for fleet project.
-CONFIGURADO PARA RAILWAY - VERSÃO CORRIGIDA
+CONFIGURADO PARA RAILWAY - VERSÃO CORRIGIDA COM FALLBACKS
 """
 
 import os
 from pathlib import Path
-from decouple import config
-import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ✅ Configurações para produção
-SECRET_KEY = config('SECRET_KEY', default='sua-chave-super-secreta-aqui')
-DEBUG = config('DEBUG', default=False, cast=bool)
+# ✅ Configurações para produção COM FALLBACKS SEGUROS
+try:
+    from decouple import config
+    SECRET_KEY = config('SECRET_KEY', default='fallback-key-change-in-production')
+    DEBUG = config('DEBUG', default=False, cast=bool)
+except ImportError:
+    # Fallback se python-decouple não estiver instalado
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-key-change-in-production')
+    DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # ✅ Hosts permitidos para deploy
 ALLOWED_HOSTS = [
@@ -26,6 +30,7 @@ ALLOWED_HOSTS = [
     'motoristapower.up.railway.app',
     '.up.railway.app',
     'dynamic-grace.up.railway.app',
+    'web-production-bda2e.up.railway.app',  # ✅ SEU DOMÍNIO ATUAL
 ]
 
 # ✅ Application definition
@@ -57,8 +62,6 @@ ROOT_URLCONF = 'fleet.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # 🔑 CORREÇÃO CRÍTICA: Use os.path.join para compatibilidade e certeza
-        # ou use a notação Path(). Aqui usamos Path para manter seu padrão.
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -82,13 +85,18 @@ DATABASES = {
     }
 }
 
-# ✅ Configuração para PostgreSQL em produção
-if 'DATABASE_URL' in os.environ:
-    DATABASES['default'] = dj_database_url.config(
-        conn_max_age=600,
-        conn_health_checks=True,
-        ssl_require=True
-    )
+# ✅ Configuração para PostgreSQL em produção (com fallback)
+try:
+    import dj_database_url
+    if 'DATABASE_URL' in os.environ:
+        DATABASES['default'] = dj_database_url.config(
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True
+        )
+except ImportError:
+    # Fallback se dj-database-url não estiver instalado
+    pass
 
 # ✅ Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -127,14 +135,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ✅ Default primary key
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# 🔑 CONFIGURAÇÕES DE AUTENTICAÇÃO (ADICIONADAS PARA RESOLVER REDIRECIONAMENTO)
-# URL para redirecionar após o login
+# 🔑 CONFIGURAÇÕES DE AUTENTICAÇÃO
 LOGIN_REDIRECT_URL = 'drivers:dashboard'
-
-# URL para a página de login (o Django a usa para proteger views)
-# Já está correto como /accounts/login/ por padrão
 LOGIN_URL = 'login'
-# Se o nome da URL for 'login' (que é o nome dado pelo 'django.contrib.auth.urls')
 
 # ✅ Segurança para produção
 if not DEBUG:
