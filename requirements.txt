@@ -3,4 +3,4 @@ whitenoise==6.7.0
 python-dateutil==2.8.2
 openpyxl==3.1.2
 reportlab==4.1.0
-Pillow==10.4.1
+Pillow>=10.4.0
