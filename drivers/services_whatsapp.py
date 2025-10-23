@@ -24,9 +24,8 @@ def enviar_whatsapp_real(nome_motorista):
         # ✅ CONFIGURAR CHROME - VERSAO SIMPLIFICADA
         chrome_options = Options()
 
-        # ⚠️⚠️⚠️ IMPORTANTE: REMOVA headless para VER o navegador ⚠️⚠️⚠️
-        # NÃO COMENTE ESTA LINHA - REMOVA COMPLETAMENTE
-        # chrome_options.add_argument("--headless")  # ← REMOVA ESTA LINHA
+        # NOVO: Re-introduzir modo headless para rodar em servidores (sem GUI)
+        chrome_options.add_argument("--headless") # ← RE-INSERIDO
 
         # Configurações básicas
         chrome_options.add_argument("--no-sandbox")

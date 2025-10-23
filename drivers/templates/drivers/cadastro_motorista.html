@@ -3,75 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if editing %}Editar Motorista{% else %}Cadastrar Motorista{% endif %} - MotoristaPower</title>
+    <title>{% if motorista %}Editar Motorista{% else %}Cadastrar Motorista{% endif %} - MotoristaPower</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .form-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
+        body { background-color: #f8f9fa; }
+        .form-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
         .card-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 15px 15px 0 0 !important;
             padding: 20px;
         }
-        .photo-section {
-            border-right: 2px dashed #dee2e6;
-            padding-right: 30px;
-        }
+        .photo-section { border-right: 2px dashed #dee2e6; padding-right: 30px; }
         .photo-preview {
-            width: 200px;
-            height: 200px;
-            border: 3px dashed #dee2e6;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            overflow: hidden;
+            width: 200px; height: 200px; border: 3px dashed #dee2e6; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; overflow: hidden;
         }
-        .photo-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .form-section {
-            padding-left: 30px;
-        }
-        .btn-custom {
-            padding: 10px 30px;
-            border-radius: 25px;
-            font-weight: 600;
+        .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .form-section { padding-left: 30px; }
+        .btn-custom { padding: 10px 30px; border-radius: 25px; font-weight: 600; }
+        .is-valid { border-color: #198754 !important; }
+        .is-invalid { border-color: #dc3545 !important; }
+        .invalid-feedback { display: block; }
+        .form-control:focus {
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #667eea;
         }
         @media (max-width: 768px) {
-            .photo-section {
-                border-right: none;
-                border-bottom: 2px dashed #dee2e6;
-                padding-right: 0;
-                padding-bottom: 30px;
-                margin-bottom: 30px;
-            }
-            .form-section {
-                padding-left: 0;
-            }
+            .photo-section { border-right: none; border-bottom: 2px dashed #dee2e6; padding-right: 0; padding-bottom: 30px; margin-bottom: 30px; }
+            .form-section { padding-left: 0; }
         }
     </style>
 </head>
 <body>
-    <!-- Navbar Simples -->
     <nav class="navbar navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand fw-bold" href="{% url 'drivers:dashboard' %}">
@@ -85,22 +53,33 @@
         <div class="card">
             <div class="card-header">
                 <h4 class="card-title mb-0 text-center">
-                    <i class="bi bi-person-{% if editing %}gear{% else %}plus{% endif %}"></i>
-                    {% if editing %}Editar Motorista{% else %}Cadastrar Novo Motorista{% endif %}
+                    <i class="bi bi-person-{% if motorista %}gear{% else %}plus{% endif %}"></i>
+                    {% if motorista %}Editar Motorista{% else %}Cadastrar Novo Motorista{% endif %}
                 </h4>
             </div>
 
+            {% if messages %}
+                <div class="p-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message|safe }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
             <div class="card-body p-4">
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" id="motoristaForm" novalidate>
+
                     {% csrf_token %}
 
                     <div class="row">
-                        <!-- Seção da Foto -->
                         <div class="col-lg-4 col-md-5 photo-section">
                             <div class="text-center">
                                 <div class="photo-preview">
-                                    {% if motorista and motorista.foto %}
-                                        <img src="{{ motorista.foto.url }}"
+                                    {% if form.instance.foto %}
+                                        <img src="{{ form.instance.foto.url }}"
                                              id="photo-preview-img"
                                              alt="Foto do motorista">
                                     {% else %}
@@ -115,57 +94,315 @@
                                     <label for="{{ form.foto.id_for_label }}" class="form-label fw-bold">
                                         <i class="bi bi-camera"></i> Foto do Motorista
                                     </label>
-                                    <input type="file"
-                                           name="foto"
-                                           class="form-control"
-                                           id="id_foto"
-                                           accept="image/*"
-                                           onchange="previewPhoto(this)">
-                                    {% if form.foto.errors %}
-                                        <div class="alert alert-danger mt-2">
-                                            {{ form.foto.errors }}
-                                        </div>
-                                    {% endif %}
+                                    {{ form.foto }}
+
+                                    <script>
+                                        // Garante que o evento onchange seja adicionado ao elemento correto
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            const fotoInput = document.getElementById('id_foto');
+                                            if (fotoInput) {
+                                                fotoInput.setAttribute('onchange', 'previewPhoto(this)');
+                                            }
+                                        });
+                                    </script>
+
+                                    {% for error in form.foto.errors %}
+                                        <div class="alert alert-danger mt-2 small">{{ error }}</div>
+                                    {% endfor %}
+
                                     <div class="form-text text-center">
-                                        Formatos: JPG, PNG, GIF<br>Máximo: 5MB
+                                        Formatos: JPG, PNG, GIF
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Seção do Formulário -->
                         <div class="col-lg-8 col-md-7 form-section">
                             <div class="row">
-                                {% for field in form %}
-                                    {% if field.name != 'foto' %}
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ field.id_for_label }}" class="form-label fw-bold">
-                                            {% if field.name == 'nome_completo' %}<i class="bi bi-person"></i>{% endif %}
-                                            {% if field.name == 'cpf' %}<i class="bi bi-credit-card"></i>{% endif %}
-                                            {% if field.name == 'data_nascimento' %}<i class="bi bi-calendar"></i>{% endif %}
-                                            {% if field.name == 'email' %}<i class="bi bi-envelope"></i>{% endif %}
-                                            {% if field.name == 'telefone' %}<i class="bi bi-phone"></i>{% endif %}
-                                            {{ field.label }}
-                                        </label>
-                                        {{ field }}
-                                        {% if field.errors %}
-                                            <div class="text-danger small mt-1">
-                                                {{ field.errors }}
-                                            </div>
-                                        {% endif %}
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.nome_completo.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-person"></i> Nome Completo
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.nome_completo.name }}"
+                                           class="form-control {% if form.nome_completo.errors %}is-invalid{% endif %}"
+                                           id="{{ form.nome_completo.id_for_label }}"
+                                           value="{{ form.nome_completo.value|default:'' }}"
+                                           placeholder="Digite o nome completo"
+                                           onblur="validarNome(this)"
+                                           required>
+                                    <div class="invalid-feedback" id="{{ form.nome_completo.id_for_label }}-erro">
+                                        {% for error in form.nome_completo.errors %}{{ error }}<br>{% endfor %}
                                     </div>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.cpf.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-credit-card"></i> CPF
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.cpf.name }}"
+                                           class="form-control {% if form.cpf.errors %}is-invalid{% endif %}"
+                                           id="{{ form.cpf.id_for_label }}"
+                                           value="{{ form.cpf.value|default:'' }}"
+                                           placeholder="000.000.000-00"
+                                           onblur="validarCPF(this)"
+                                           oninput="aplicarMascaraCPF(this)"
+                                           maxlength="14"
+                                           required>
+                                    <div class="invalid-feedback" id="{{ form.cpf.id_for_label }}-erro">
+                                        {% for error in form.cpf.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                   <label for="{{ form.data_nascimento.id_for_label }}" class="form-label fw-bold">
+    <i class="bi bi-calendar"></i> Data de Nascimento
+</label>
+<input type="date"
+       name="{{ form.data_nascimento.name }}"
+       class="form-control {% if form.data_nascimento.errors %}is-invalid{% endif %}"
+       id="{{ form.data_nascimento.id_for_label }}"
+       value="{{ form.data_nascimento.value|default:''|date:'Y-m-d' }}"
+       required>
+<div class="invalid-feedback" id="{{ form.data_nascimento.id_for_label }}-erro">
+                                        {% for error in form.data_nascimento.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-envelope"></i> E-mail
+                                    </label>
+                                    <input type="email"
+                                           name="{{ form.email.name }}"
+                                           class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                                           id="{{ form.email.id_for_label }}"
+                                           value="{{ form.email.value|default:'' }}"
+                                           placeholder="email@exemplo.com"
+                                           required>
+                                    <div class="invalid-feedback" id="{{ form.email.id_for_label }}-erro">
+                                        {% for error in form.email.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.telefone.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-phone"></i> Telefone
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.telefone.name }}"
+                                           class="form-control {% if form.telefone.errors %}is-invalid{% endif %}"
+                                           id="{{ form.telefone.id_for_label }}"
+                                           value="{{ form.telefone.value|default:'' }}"
+                                           placeholder="(00) 00000-0000"
+                                           onblur="validarTelefone(this)"
+                                           oninput="aplicarMascaraTelefone(this)"
+                                           required>
+                                    <div class="invalid-feedback" id="{{ form.telefone.id_for_label }}-erro">
+                                        {% for error in form.telefone.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-8 mb-3">
+                                    <label for="{{ form.endereco.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-geo-alt"></i> Endereço
+                                    </label>
+                                    <input type="text"
+                                              name="{{ form.endereco.name }}"
+                                              class="form-control {% if form.endereco.errors %}is-invalid{% endif %}"
+                                              id="{{ form.endereco.id_for_label }}"
+                                              placeholder="Rua, Avenida, etc."
+                                              value="{{ form.endereco.value|default:'' }}"
+                                              onblur="validarEndereco(this)"
+                                              required>
+                                    <div class="invalid-feedback" id="{{ form.endereco.id_for_label }}-erro">
+                                        {% for error in form.endereco.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.numero.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-hash"></i> Número
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.numero.name }}"
+                                           class="form-control {% if form.numero.errors %}is-invalid{% endif %}"
+                                           id="{{ form.numero.id_for_label }}"
+                                           value="{{ form.numero.value|default:'' }}"
+                                           placeholder="123">
+                                    <div class="invalid-feedback" id="{{ form.numero.id_for_label }}-erro">
+                                        {% for error in form.numero.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.complemento.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-door-closed"></i> Complemento
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.complemento.name }}"
+                                           class="form-control {% if form.complemento.errors %}is-invalid{% endif %}"
+                                           id="{{ form.complemento.id_for_label }}"
+                                           value="{{ form.complemento.value|default:'' }}"
+                                           placeholder="Apartamento, Bloco, etc.">
+                                    <div class="invalid-feedback" id="{{ form.complemento.id_for_label }}-erro">
+                                        {% for error in form.complemento.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.bairro.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-signpost"></i> Bairro
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.bairro.name }}"
+                                           class="form-control {% if form.bairro.errors %}is-invalid{% endif %}"
+                                           id="{{ form.bairro.id_for_label }}"
+                                           value="{{ form.bairro.value|default:'' }}"
+                                           placeholder="Nome do bairro">
+                                    <div class="invalid-feedback" id="{{ form.bairro.id_for_label }}-erro">
+                                        {% for error in form.bairro.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.cep.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-mailbox"></i> CEP
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.cep.name }}"
+                                           class="form-control {% if form.cep.errors %}is-invalid{% endif %}"
+                                           id="{{ form.cep.id_for_label }}"
+                                           value="{{ form.cep.value|default:'' }}"
+                                           placeholder="00000-000"
+                                           onblur="validarCEP(this)"
+                                           oninput="aplicarMascaraCEP(this)"
+                                           maxlength="9"
+                                           required>
+                                    <div class="invalid-feedback" id="{{ form.cep.id_for_label }}-erro">
+                                        {% for error in form.cep.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.cidade.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-building"></i> Cidade
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.cidade.name }}"
+                                           class="form-control {% if form.cidade.errors %}is-invalid{% endif %}"
+                                           id="{{ form.cidade.id_for_label }}"
+                                           value="{{ form.cidade.value|default:'' }}"
+                                           placeholder="Nome da cidade"
+                                           onblur="validarCidade(this)"
+                                           required>
+                                    <div class="invalid-feedback" id="{{ form.cidade.id_for_label }}-erro">
+                                        {% for error in form.cidade.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.estado.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-geo"></i> Estado
+                                    </label>
+                                    {{ form.estado }}
+                                    <div class="invalid-feedback" id="{{ form.estado.id_for_label }}-erro">
+                                        {% for error in form.estado.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.cnh_numero.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-card-text"></i> Número da CNH
+                                    </label>
+                                    <input type="text"
+                                           name="{{ form.cnh_numero.name }}"
+                                           class="form-control {% if form.cnh_numero.errors %}is-invalid{% endif %}"
+                                           id="{{ form.cnh_numero.id_for_label }}"
+                                           value="{{ form.cnh_numero.value|default:'' }}"
+                                           placeholder="Apenas números"
+                                           onblur="validarCNH(this)"
+                                           oninput="aplicarMascaraNumeros(this)"
+                                           maxlength="11"
+                                           required>
+                                    <div class="invalid-feedback" id="{{ form.cnh_numero.id_for_label }}-erro">
+                                        {% for error in form.cnh_numero.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.cnh_categoria.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-card-checklist"></i> Categoria da CNH
+                                    </label>
+                                    {{ form.cnh_categoria }}
+                                    <div class="invalid-feedback" id="{{ form.cnh_categoria.id_for_label }}-erro">
+                                        {% for error in form.cnh_categoria.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                   <label for="{{ form.cnh_emissao.id_for_label }}" class="form-label fw-bold">
+    <i class="bi bi-calendar-check"></i> Data de Emissão CNH
+</label>
+<input type="date"
+       name="{{ form.cnh_emissao.name }}"
+       class="form-control {% if form.cnh_emissao.errors %}is-invalid{% endif %}"
+       id="{{ form.cnh_emissao.id_for_label }}"
+       value="{{ form.cnh_emissao.value|default:''|date:'Y-m-d' }}"
+       required>
+<div class="invalid-feedback" id="{{ form.cnh_emissao.id_for_label }}-erro">
+                                        {% for error in form.cnh_emissao.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                   <label for="{{ form.cnh_validade.id_for_label }}" class="form-label fw-bold">
+    <i class="bi bi-calendar-check"></i> Data de Vencimento CNH
+</label>
+<input type="date"
+       name="{{ form.cnh_validade.name }}"
+       class="form-control {% if form.cnh_validade.errors %}is-invalid{% endif %}"
+       id="{{ form.cnh_validade.id_for_label }}"
+       value="{{ form.cnh_validade.value|default:''|date:'Y-m-d' }}"
+       required>
+<div class="invalid-feedback" id="{{ form.cnh_validade.id_for_label }}-erro">
+                                        {% for error in form.cnh_validade.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-person-check"></i> Status
+                                    </label>
+                                    {{ form.status }}
+                                    <div class="invalid-feedback" id="{{ form.status.id_for_label }}-erro">
+                                        {% for error in form.status.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                {# O CAMPO SALARIO FOI REMOVIDO DAQUI #}
+
+                                <div class="col-md-12 mb-3">
+                                    <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-bold">
+                                        <i class="bi bi-chat-left-dots"></i> Observações
+                                    </label>
+                                    {{ form.observacoes }}
+                                    <div class="invalid-feedback" id="{{ form.observacoes.id_for_label }}-erro">
+                                        {% for error in form.observacoes.errors %}{{ error }}<br>{% endfor %}
+                                    </div>
+                                </div>
+
+                                </div>
                         </div>
                     </div>
 
-                    <!-- Botões -->
                     <div class="row mt-4">
                         <div class="col-12 text-center">
-                            <button type="submit" class="btn btn-success btn-custom me-3">
+                            <button type="submit" class="btn btn-success btn-custom me-3" id="submitBtn">
                                 <i class="bi bi-check-circle"></i>
-                                {% if editing %}Atualizar{% else %}Cadastrar{% endif %} Motorista
+                                {% if motorista %}Atualizar{% else %}Cadastrar{% endif %} Motorista
                             </button>
                             <a href="{% url 'drivers:motorista_list' %}" class="btn btn-secondary btn-custom">
                                 <i class="bi bi-arrow-left"></i> Voltar para Lista
@@ -177,42 +414,219 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // ✅ CORREÇÃO: Variável JavaScript SEGURA para a URL da foto existente.
+        // Isso evita o erro ValueError quando a página é carregada sem foto associada ao formulário (caso de cadastro).
+        const existingPhotoUrl = "{% if form.instance.foto %}{{ form.instance.foto.url }}{% endif %}";
+
+
+        // ========== FUNÇÕES DE VALIDAÇÃO ==========
+
+        function validarNome(campo) {
+            const valor = campo.value.trim();
+            if (!valor) { mostrarErro(campo, 'Nome é obrigatório'); return false; }
+            if (valor.length < 3) { mostrarErro(campo, 'Nome deve ter pelo menos 3 caracteres'); return false; }
+            mostrarSucesso(campo); return true;
+        }
+
+        function validarCPF(campo) {
+            const cpf = campo.value;
+            // Verifica o formato com 14 caracteres: 000.000.000-00
+            const regex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
+
+            if (!cpf) { mostrarErro(campo, 'CPF é obrigatório'); return false; }
+            if (!regex.test(cpf)) { mostrarErro(campo, 'CPF deve estar no formato: 000.000.000-00'); return false; }
+            mostrarSucesso(campo); return true;
+        }
+
+        function validarTelefone(campo) {
+            const telefone = campo.value;
+            // Permite (00) 0000-0000 (14 chars) ou (00) 00000-0000 (15 chars)
+            const regex = /^\(\d{2}\)\s?\d{4,5}-\d{4}$/;
+
+            if (!telefone) { mostrarErro(campo, 'Telefone é obrigatório'); return false; }
+            if (!regex.test(telefone) || (telefone.length < 14 || telefone.length > 15)) {
+                mostrarErro(campo, 'Telefone deve estar no formato: (00) 0000-0000 ou (00) 00000-0000');
+                return false;
+            }
+            mostrarSucesso(campo); return true;
+        }
+
+        function validarEndereco(campo) {
+            const valor = campo.value.trim();
+            if (!valor) { mostrarErro(campo, 'Endereço é obrigatório'); return false; }
+            if (valor.length < 5) { mostrarErro(campo, 'Endereço deve ter pelo menos 5 caracteres'); return false; }
+            mostrarSucesso(campo); return true;
+        }
+
+        function validarCidade(campo) {
+            const valor = campo.value.trim();
+            if (!valor) { mostrarErro(campo, 'Cidade é obrigatória'); return false; }
+            mostrarSucesso(campo); return true;
+        }
+
+        function validarEstado(campo) {
+            const valor = campo.value;
+            if (!valor) { mostrarErro(campo, 'Estado é obrigatório'); return false; }
+            mostrarSucesso(campo); return true;
+        }
+
+        function validarCEP(campo) {
+            const cep = campo.value;
+            const regex = /^\d{5}-\d{3}$/;
+
+            if (!cep) { mostrarErro(campo, 'CEP é obrigatório'); return false; }
+            if (!regex.test(cep)) { mostrarErro(campo, 'CEP deve estar no formato: 00000-000'); return false; }
+            mostrarSucesso(campo); return true;
+        }
+
+        function validarCNH(campo) {
+            const cnh = campo.value;
+            if (!cnh) { mostrarErro(campo, 'Número da CNH é obrigatório'); return false; }
+            if (!/^\d+$/.test(cnh)) { mostrarErro(campo, 'CNH deve conter apenas números'); return false; }
+            if (cnh.length !== 11) { mostrarErro(campo, 'CNH deve ter 11 dígitos'); return false; }
+            mostrarSucesso(campo); return true;
+        }
+
+        function validarCategoria(campo) {
+            const valor = campo.value;
+            if (!valor) { mostrarErro(campo, 'Categoria da CNH é obrigatória'); return false; }
+            mostrarSucesso(campo); return true;
+        }
+
+        // ========== FUNÇÕES DE MÁSCARA ==========
+
+        function aplicarMascaraCPF(campo) {
+            let valor = campo.value.replace(/\D/g, '');
+            // Limita a 11 dígitos, o que resulta em 14 caracteres com a máscara
+            valor = valor.substring(0, 11);
+
+            if (valor.length > 9) {
+                valor = valor.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+            } else if (valor.length > 6) {
+                valor = valor.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3');
+            } else if (valor.length > 3) {
+                valor = valor.replace(/^(\d{3})(\d{1,3})$/, '$1.$2');
+            }
+            campo.value = valor;
+        }
+
+        function aplicarMascaraTelefone(campo) {
+            let valor = campo.value.replace(/\D/g, '').substring(0, 11);
+            if (valor.length === 11) {
+                valor = valor.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+            } else if (valor.length === 10) {
+                valor = valor.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+            } else if (valor.length > 2) {
+                valor = valor.replace(/^(\d{2})(\d{0,9})$/, '($1) $2');
+            }
+            campo.value = valor;
+        }
+
+        function aplicarMascaraCEP(campo) {
+            let valor = campo.value.replace(/\D/g, '').substring(0, 8);
+            if (valor.length > 5) {
+                valor = valor.replace(/^(\d{5})(\d{1,3})$/, '$1-$2');
+            }
+            campo.value = valor;
+        }
+
+        function aplicarMascaraNumeros(campo) {
+            campo.value = campo.value.replace(/\D/g, '');
+        }
+
+        // ========== FUNÇÕES AUXILIARES ==========
+
+        function mostrarErro(campo, mensagem) {
+            campo.classList.remove('is-valid');
+            campo.classList.add('is-invalid');
+
+            const erroElement = document.getElementById(campo.id + '-erro');
+            if (erroElement) {
+                erroElement.innerHTML = mensagem;
+            }
+        }
+
+        function mostrarSucesso(campo) {
+            campo.classList.remove('is-invalid');
+            campo.classList.add('is-valid');
+
+            const erroElement = document.getElementById(campo.id + '-erro');
+            if (erroElement) {
+                erroElement.innerHTML = '';
+            }
+        }
+
+        // ========== VALIDAÇÃO DO FORMULÁRIO GERAL ==========
+
+        document.getElementById('motoristaForm').addEventListener('submit', function(e) {
+            const campos = [
+                'id_nome_completo', 'id_cpf', 'id_telefone', 'id_endereco',
+                'id_cidade', 'id_estado', 'id_cep', 'id_cnh_numero',
+                'id_cnh_categoria'
+            ];
+
+            let formularioValido = true;
+
+            campos.forEach(campoId => {
+                const campo = document.getElementById(campoId);
+                if (campo) {
+                    // Monta o nome da função de validação (ex: validarNomeCompleto)
+                    const nomeFuncao = campoId.replace('id_', '');
+                    const funcaoValidacao = 'validar' + nomeFuncao.charAt(0).toUpperCase() + nomeFuncao.slice(1);
+
+                    if (typeof window[funcaoValidacao] === 'function') {
+                        // Chama a validação e atualiza o estado de validade
+                        if (!window[funcaoValidacao](campo)) {
+                            formularioValido = false;
+                        } else if (campo.classList.contains('is-invalid')) {
+                             // Garante que se a validação falhar por outro motivo, o formulário não seja enviado
+                            formularioValido = false;
+                        }
+                    }
+                }
+            });
+
+            if (!formularioValido) {
+                e.preventDefault();
+                alert('❌ Por favor, corrija os erros destacados em vermelho antes de enviar o formulário.');
+
+                const primeiroErro = document.querySelector('.is-invalid');
+                if (primeiroErro) {
+                    primeiroErro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+
+        // ========== PREVIEW DA FOTO (TRECHO CORRIGIDO E SEGURO) ==========
         function previewPhoto(input) {
-            const preview = document.getElementById('photo-preview-img');
-            const placeholder = document.getElementById('photo-placeholder');
+            const previewContainer = document.querySelector('.photo-preview');
             const file = input.files[0];
 
             if (file) {
+                // A validação de tamanho deve ser feita principalmente no Django (backend)
                 const reader = new FileReader();
-
                 reader.onload = function(e) {
-                    if (preview) {
-                        preview.src = e.target.result;
-                    } else {
-                        // Cria a imagem se não existir
-                        const photoPreview = document.querySelector('.photo-preview');
-                        photoPreview.innerHTML = '';
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.id = 'photo-preview-img';
-                        img.alt = 'Preview da foto';
-                        img.style.width = '100%';
-                        img.style.height = '100%';
-                        img.style.objectFit = 'cover';
-                        photoPreview.appendChild(img);
-                    }
-
-                    if (placeholder) {
-                        placeholder.style.display = 'none';
-                    }
+                    previewContainer.innerHTML = `<img src="${e.target.result}" id="photo-preview-img" alt="Preview da foto">`;
                 }
-
                 reader.readAsDataURL(file);
+            } else {
+                // Se o arquivo for removido (input.files é vazio), restaura o estado inicial
+                if (existingPhotoUrl) {
+                    // Se houver uma foto existente (caso de edição), restaura-a usando a variável segura
+                    previewContainer.innerHTML = `<img src="${existingPhotoUrl}" id="photo-preview-img" alt="Foto do motorista">`;
+                } else {
+                    // Se não houver foto (novo cadastro), exibe o placeholder
+                    previewContainer.innerHTML = `
+                        <div id="photo-placeholder" class="text-center">
+                            <i class="bi bi-person display-1 text-muted"></i>
+                            <p class="text-muted mt-2 small">Sem foto</p>
+                        </div>
+                    `;
+                }
             }
         }
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

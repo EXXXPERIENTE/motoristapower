@@ -65,6 +65,14 @@
         .cpf-invalid {
             color: #dc3545;
         }
+        .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        .idade-info, .vencimento-info {
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
     </style>
 </head>
 <body style="background-color: #f8f9fa;">
@@ -189,17 +197,36 @@
                                     <i class="fas fa-id-card"></i> Dados Pessoais
                                 </h5>
 
-                                <!-- Nome Completo -->
+                                <!-- Nome -->
                                 <div class="mb-3 required">
-                                    <label for="{{ form.nome_completo.id_for_label }}" class="form-label fw-semibold">{{ form.nome_completo.label }}</label>
-                                    {{ form.nome_completo }}
-                                    {% if form.nome_completo.errors %}
+                                    <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">{{ form.nome.label }}</label>
+                                    {{ form.nome }}
+                                    {% if form.nome.errors %}
                                         <div class="error-message">
-                                            {% for error in form.nome_completo.errors %}
+                                            {% for error in form.nome.errors %}
                                                 <i class="fas fa-exclamation-circle"></i> {{ error }}
                                             {% endfor %}
                                         </div>
                                     {% endif %}
+                                </div>
+
+                                <!-- ✅ ADICIONADO: Data de Nascimento -->
+                                <div class="mb-3 required">
+                                    <label for="{{ form.data_nascimento.id_for_label }}" class="form-label fw-semibold">{{ form.data_nascimento.label }}</label>
+                                    <div class="input-group">
+                                        {{ form.data_nascimento }}
+                                        <span class="input-group-text">
+                                            <i class="fas fa-birthday-cake"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.data_nascimento.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.data_nascimento.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">Formato: DD/MM/AAAA | Mínimo 18 anos</div>
                                 </div>
 
                                 <!-- CPF -->
@@ -222,57 +249,8 @@
                                     <div class="form-text">Digite o CPF com 11 dígitos</div>
                                 </div>
 
-                                <!-- Data Nascimento -->
-                                <div class="mb-3 required">
-                                    <label for="{{ form.data_nascimento.id_for_label }}" class="form-label fw-semibold">{{ form.data_nascimento.label }}</label>
-                                    <div class="input-group">
-                                        {{ form.data_nascimento }}
-                                        <span class="input-group-text">
-                                            <i class="fas fa-calendar-alt"></i>
-                                        </span>
-                                    </div>
-                                    {% if form.data_nascimento.errors %}
-                                        <div class="error-message">
-                                            {% for error in form.data_nascimento.errors %}
-                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    <div class="form-text">Formato: DD/MM/AAAA</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Coluna 2: Contato, Endereço e Profissional -->
-                    <div class="col-lg-6">
-                        <!-- Contato -->
-                        <div class="card mb-4 border-0 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="section-title">
-                                    <i class="fas fa-address-book"></i> Contato
-                                </h5>
-
-                                <!-- Email -->
-                                <div class="mb-3">
-                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">{{ form.email.label }}</label>
-                                    <div class="input-group">
-                                        {{ form.email }}
-                                        <span class="input-group-text">
-                                            <i class="fas fa-envelope"></i>
-                                        </span>
-                                    </div>
-                                    {% if form.email.errors %}
-                                        <div class="error-message">
-                                            {% for error in form.email.errors %}
-                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-
                                 <!-- Telefone -->
-                                <div class="mb-3">
+                                <div class="mb-3 required">
                                     <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">{{ form.telefone.label }}</label>
                                     <div class="input-group">
                                         {{ form.telefone }}
@@ -290,7 +268,10 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
+                    <!-- Coluna 2: Endereço e Documentação -->
+                    <div class="col-lg-6">
                         <!-- Endereço -->
                         <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-body">
@@ -298,8 +279,21 @@
                                     <i class="fas fa-map-marker-alt"></i> Endereço
                                 </h5>
 
+                                <!-- Endereço Completo -->
+                                <div class="mb-3 required">
+                                    <label for="{{ form.endereco.id_for_label }}" class="form-label fw-semibold">{{ form.endereco.label }}</label>
+                                    {{ form.endereco }}
+                                    {% if form.endereco.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.endereco.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
                                 <!-- Cidade -->
-                                <div class="mb-3">
+                                <div class="mb-3 required">
                                     <label for="{{ form.cidade.id_for_label }}" class="form-label fw-semibold">{{ form.cidade.label }}</label>
                                     {{ form.cidade }}
                                     {% if form.cidade.errors %}
@@ -312,7 +306,7 @@
                                 </div>
 
                                 <!-- Estado -->
-                                <div class="mb-3">
+                                <div class="mb-3 required">
                                     <label for="{{ form.estado.id_for_label }}" class="form-label fw-semibold">{{ form.estado.label }}</label>
                                     {{ form.estado }}
                                     {% if form.estado.errors %}
@@ -323,18 +317,36 @@
                                         </div>
                                     {% endif %}
                                 </div>
+
+                                <!-- CEP -->
+                                <div class="mb-3 required">
+                                    <label for="{{ form.cep.id_for_label }}" class="form-label fw-semibold">{{ form.cep.label }}</label>
+                                    <div class="input-group">
+                                        {{ form.cep }}
+                                        <span class="input-group-text">
+                                            <i class="fas fa-mail-bulk"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.cep.errors %}
+                                        <div class="error-message">
+                                            {% for error in form.cep.errors %}
+                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Documentação e Profissional -->
+                        <!-- Documentação da CNH -->
                         <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-body">
                                 <h5 class="section-title">
-                                    <i class="fas fa-file-alt"></i> Documentação
+                                    <i class="fas fa-file-alt"></i> Documentação da CNH
                                 </h5>
 
                                 <!-- CNH Número -->
-                                <div class="mb-3">
+                                <div class="mb-3 required">
                                     <label for="{{ form.cnh_numero.id_for_label }}" class="form-label fw-semibold">{{ form.cnh_numero.label }}</label>
                                     <div class="input-group">
                                         {{ form.cnh_numero }}
@@ -352,7 +364,7 @@
                                 </div>
 
                                 <!-- CNH Categoria -->
-                                <div class="mb-3">
+                                <div class="mb-3 required">
                                     <label for="{{ form.cnh_categoria.id_for_label }}" class="form-label fw-semibold">{{ form.cnh_categoria.label }}</label>
                                     {{ form.cnh_categoria }}
                                     {% if form.cnh_categoria.errors %}
@@ -364,48 +376,36 @@
                                     {% endif %}
                                 </div>
 
-                                <!-- Data Admissão -->
-                                <div class="mb-3">
-                                    <label for="{{ form.data_admissao.id_for_label }}" class="form-label fw-semibold">{{ form.data_admissao.label }}</label>
+                                <!-- Data de Vencimento da CNH -->
+                                <div class="mb-3 required">
+                                    <label for="{{ form.data_vencimento_cnh.id_for_label }}" class="form-label fw-semibold">Data de Vencimento da CNH</label>
                                     <div class="input-group">
-                                        {{ form.data_admissao }}
+                                        {{ form.data_vencimento_cnh }}
                                         <span class="input-group-text">
                                             <i class="fas fa-calendar-day"></i>
                                         </span>
                                     </div>
-                                    {% if form.data_admissao.errors %}
+                                    {% if form.data_vencimento_cnh.errors %}
                                         <div class="error-message">
-                                            {% for error in form.data_admissao.errors %}
+                                            {% for error in form.data_vencimento_cnh.errors %}
                                                 <i class="fas fa-exclamation-circle"></i> {{ error }}
                                             {% endfor %}
                                         </div>
                                     {% endif %}
-                                    <div class="form-text">Formato: DD/MM/AAAA</div>
+                                    <div class="form-text">Formato: DD/MM/AAAA | Deve ser data futura</div>
                                 </div>
 
-                                <!-- Salário -->
+                                <!-- Status Ativo -->
                                 <div class="mb-3">
-                                    <label for="{{ form.salario.id_for_label }}" class="form-label fw-semibold">{{ form.salario.label }}</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">R$</span>
-                                        {{ form.salario }}
+                                    <div class="form-check form-switch">
+                                        {{ form.ativo }}
+                                        <label for="{{ form.ativo.id_for_label }}" class="form-check-label fw-semibold">
+                                            <i class="fas fa-toggle-on"></i> Motorista Ativo
+                                        </label>
                                     </div>
-                                    {% if form.salario.errors %}
+                                    {% if form.ativo.errors %}
                                         <div class="error-message">
-                                            {% for error in form.salario.errors %}
-                                                <i class="fas fa-exclamation-circle"></i> {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-
-                                <!-- Status -->
-                                <div class="mb-3">
-                                    <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">{{ form.status.label }}</label>
-                                    {{ form.status }}
-                                    {% if form.status.errors %}
-                                        <div class="error-message">
-                                            {% for error in form.status.errors %}
+                                            {% for error in form.ativo.errors %}
                                                 <i class="fas fa-exclamation-circle"></i> {{ error }}
                                             {% endfor %}
                                         </div>
@@ -465,24 +465,21 @@
                 };
                 $('#{{ form.telefone.id_for_label }}').mask(SPMaskBehavior, spOptions);
 
-                // Datas
-                $('#{{ form.data_nascimento.id_for_label }}').mask('00/00/0000');
-                $('#{{ form.data_admissao.id_for_label }}').mask('00/00/0000');
+                // CEP
+                $('#{{ form.cep.id_for_label }}').mask('00000-000');
 
-                // Salário
-                $('#{{ form.salario.id_for_label }}').mask('#.##0,00', {
-                    reverse: true,
-                    translation: {
-                        '#': { pattern: /\d/ }
-                    }
-                });
+                // ✅ ADICIONADO: Data de Nascimento
+                $('#{{ form.data_nascimento.id_for_label }}').mask('00/00/0000');
+
+                // Data de Vencimento da CNH
+                $('#{{ form.data_vencimento_cnh.id_for_label }}').mask('00/00/0000');
             }
 
             // Elementos DOM
             const cpfField = document.getElementById('{{ form.cpf.id_for_label }}');
             const cpfStatus = document.getElementById('cpfStatus');
             const dataNascimentoField = document.getElementById('{{ form.data_nascimento.id_for_label }}');
-            const dataAdmissaoField = document.getElementById('{{ form.data_admissao.id_for_label }}');
+            const dataVencimentoField = document.getElementById('{{ form.data_vencimento_cnh.id_for_label }}');
             const fotoField = document.getElementById('{{ form.foto.id_for_label }}');
             const previewContainer = document.getElementById('fotoPreview');
             const previewImage = document.getElementById('previewImage');
@@ -564,10 +561,21 @@
                        data.getFullYear() == ano;
             }
 
-            // Função para calcular idade a partir da data
-            function calcularIdade(dataStr) {
-                if (!validarData(dataStr)) return null;
+            // ✅ ADICIONADO: Validação de data de nascimento
+            function validarDataNascimento(campo) {
+                const dataStr = campo.value;
 
+                if (!dataStr) {
+                    showFieldError(campo, 'Data de nascimento é obrigatória.');
+                    return false;
+                }
+
+                if (!validarData(dataStr)) {
+                    showFieldError(campo, 'Data inválida. Use o formato DD/MM/AAAA.');
+                    return false;
+                }
+
+                // Calcular idade
                 const [, dia, mes, ano] = dataStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
                 const nascimento = new Date(ano, mes - 1, dia);
                 const hoje = new Date();
@@ -581,52 +589,88 @@
                     idade--;
                 }
 
-                return idade;
+                if (idade < 18) {
+                    showFieldError(campo, '❌ Não cadastramos motoristas menores de 18 anos.');
+                    return false;
+                }
+
+                if (idade > 100) {
+                    showFieldError(campo, 'Idade inválida. Verifique a data de nascimento.');
+                    return false;
+                }
+
+                clearFieldError(campo);
+
+                // Mostrar idade calculada
+                const existingInfo = campo.parentNode.querySelector('.idade-info');
+                if (existingInfo) {
+                    existingInfo.remove();
+                }
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'form-text text-success idade-info';
+                infoDiv.innerHTML = `<i class="fas fa-user-check"></i> Idade: ${idade} anos`;
+                campo.parentNode.appendChild(infoDiv);
+
+                return true;
             }
 
-            // Validação de data de nascimento
-            if (dataNascimentoField) {
-                dataNascimentoField.addEventListener('blur', function(e) {
+            // Função para validar se data é futura
+            function validarDataFutura(dataStr) {
+                if (!validarData(dataStr)) return false;
+
+                const [, dia, mes, ano] = dataStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                const dataVencimento = new Date(ano, mes - 1, dia);
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0); // Remove horas para comparar apenas datas
+
+                return dataVencimento > hoje;
+            }
+
+            // Validação de data de vencimento da CNH
+            if (dataVencimentoField) {
+                dataVencimentoField.addEventListener('blur', function(e) {
                     if (e.target.value) {
                         if (!validarData(e.target.value)) {
-                            showFieldError(dataNascimentoField, 'Data inválida. Use DD/MM/AAAA.');
+                            showFieldError(dataVencimentoField, 'Data inválida. Use o formato DD/MM/AAAA.');
+                        } else if (!validarDataFutura(e.target.value)) {
+                            showFieldError(dataVencimentoField, 'A data de vencimento deve ser futura.');
                         } else {
-                            const idade = calcularIdade(e.target.value);
-                            if (idade !== null) {
-                                if (idade < 18) {
-                                    showFieldError(dataNascimentoField, 'Motorista deve ter pelo menos 18 anos.');
-                                } else if (idade > 100) {
-                                    showFieldError(dataNascimentoField, 'Idade inválida.');
-                                } else {
-                                    clearFieldError(dataNascimentoField);
-                                    // Mostra a idade calculada
-                                    const existingAgeInfo = dataNascimentoField.parentNode.querySelector('.age-info');
-                                    if (existingAgeInfo) {
-                                        existingAgeInfo.remove();
-                                    }
-                                    const ageInfo = document.createElement('div');
-                                    ageInfo.className = 'form-text text-success';
-                                    ageInfo.innerHTML = `<i class="fas fa-user"></i> Idade: ${idade} anos`;
-                                    dataNascimentoField.parentNode.appendChild(ageInfo);
-                                }
+                            clearFieldError(dataVencimentoField);
+
+                            // Calcular dias até o vencimento
+                            const [, dia, mes, ano] = e.target.value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                            const dataVencimento = new Date(ano, mes - 1, dia);
+                            const hoje = new Date();
+                            const diffTime = dataVencimento - hoje;
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                            // Mostrar informação dos dias
+                            const existingInfo = dataVencimentoField.parentNode.querySelector('.vencimento-info');
+                            if (existingInfo) {
+                                existingInfo.remove();
                             }
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'form-text vencimento-info';
+
+                            if (diffDays <= 90) {
+                                infoDiv.innerHTML = `<i class="fas fa-exclamation-triangle text-warning"></i> CNH vence em ${diffDays} dias`;
+                                infoDiv.className += ' text-warning';
+                            } else {
+                                infoDiv.innerHTML = `<i class="fas fa-check-circle text-success"></i> CNH válida por ${diffDays} dias`;
+                                infoDiv.className += ' text-success';
+                            }
+                            dataVencimentoField.parentNode.appendChild(infoDiv);
                         }
                     } else {
-                        clearFieldError(dataNascimentoField);
+                        clearFieldError(dataVencimentoField);
                     }
                 });
             }
 
-            // Validação de data de admissão
-            if (dataAdmissaoField) {
-                dataAdmissaoField.addEventListener('blur', function(e) {
-                    if (e.target.value) {
-                        if (!validarData(e.target.value)) {
-                            showFieldError(dataAdmissaoField, 'Data inválida. Use DD/MM/AAAA.');
-                        } else {
-                            clearFieldError(dataAdmissaoField);
-                        }
-                    }
+            // ✅ ADICIONADO: Validação de data de nascimento em tempo real
+            if (dataNascimentoField) {
+                dataNascimentoField.addEventListener('blur', function(e) {
+                    validarDataNascimento(e.target);
                 });
             }
 
@@ -697,39 +741,20 @@
                         }
                     }
 
-                    // Validar data de nascimento
+                    // ✅ ADICIONADO: Validar data de nascimento
                     if (dataNascimentoField && dataNascimentoField.value) {
-                        if (!validarData(dataNascimentoField.value)) {
-                            showFieldError(dataNascimentoField, 'Data de nascimento inválida.');
-                            hasErrors = true;
-                        } else {
-                            const idade = calcularIdade(dataNascimentoField.value);
-                            if (idade < 18) {
-                                showFieldError(dataNascimentoField, 'Motorista deve ter pelo menos 18 anos.');
-                                hasErrors = true;
-                            }
-                        }
-                    }
-
-                    // Validar data de admissão
-                    if (dataAdmissaoField && dataAdmissaoField.value) {
-                        if (!validarData(dataAdmissaoField.value)) {
-                            showFieldError(dataAdmissaoField, 'Data de admissão inválida.');
+                        if (!validarDataNascimento(dataNascimentoField)) {
                             hasErrors = true;
                         }
                     }
 
-                    // Validar se data de admissão é posterior à data de nascimento
-                    if (dataNascimentoField.value && dataAdmissaoField.value) {
-                        const nascimento = new Date(
-                            dataNascimentoField.value.split('/').reverse().join('-')
-                        );
-                        const admissao = new Date(
-                            dataAdmissaoField.value.split('/').reverse().join('-')
-                        );
-
-                        if (admissao < nascimento) {
-                            showFieldError(dataAdmissaoField, 'Data de admissão não pode ser anterior à data de nascimento.');
+                    // Validar data de vencimento da CNH
+                    if (dataVencimentoField && dataVencimentoField.value) {
+                        if (!validarData(dataVencimentoField.value)) {
+                            showFieldError(dataVencimentoField, 'Data de vencimento inválida.');
+                            hasErrors = true;
+                        } else if (!validarDataFutura(dataVencimentoField.value)) {
+                            showFieldError(dataVencimentoField, 'A data de vencimento deve ser futura.');
                             hasErrors = true;
                         }
                     }

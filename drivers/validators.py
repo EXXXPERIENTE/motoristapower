@@ -2,9 +2,9 @@ import re
 from django.core.exceptions import ValidationError
 
 
-def validar_cpf(value):
+def validate_cpf(value): # ALTERADO: DE 'validar_cpf' PARA 'validate_cpf'
     """
-    Valida se o CPF é válido
+    Valida se o CPF é válido (função renomeada para DRF compatibility)
     """
     cpf = re.sub(r'[^0-9]', '', str(value))
 

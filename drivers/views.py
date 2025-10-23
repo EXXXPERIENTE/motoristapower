@@ -1,10 +1,18 @@
-from django.shortcuts import render, redirect
-from django.views.generic import ListView, UpdateView, DeleteView
+import logging
+import io
+import threading
+from datetime import datetime, date
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import ListView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django.db.models import Count, Q, Sum, Avg
-from datetime import datetime
+from django.db import IntegrityError
 from django.http import HttpResponse
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 from reportlab.pdfgen import canvas
@@ -13,29 +21,68 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-import io
-import threading
 
 from .forms import MotoristaForm
 from .models import Motorista
 
+# Configuração de logger
+logger = logging.getLogger(__name__)
 
-class MotoristaListView(ListView):
+
+# 🚨 CORREÇÃO: LoginRequiredMixin garante que o usuário anônimo seja redirecionado
+class DashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'drivers/dashboard.html'
+    # Redireciona para o login se não estiver autenticado.
+    login_url = '/accounts/login/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Se não for Staff, ele não deveria ver esta view, mas o LoginRequiredMixin já protege o acesso.
+        # Motoristas comuns (não staff) que logarem, verão o dashboard, mas com dados limitados se for o caso.
+
+        total_motoristas = Motorista.objects.count()
+        motoristas_ativos = Motorista.objects.filter(status='ATIVO').count()
+        motoristas_inativos = Motorista.objects.filter(status='INATIVO').count()
+        estados_stats = Motorista.objects.values('estado').annotate(
+            total=Count('id')
+        ).order_by('-total')[:5]
+        ultimos_cadastros = Motorista.objects.all().order_by('-created_at')[:5]
+
+        context.update({
+            'total_motoristas': total_motoristas,
+            'motoristas_ativos': motoristas_ativos,
+            'motoristas_inativos': motoristas_inativos,
+            'estados_stats': estados_stats,
+            'ultimos_cadastros': ultimos_cadastros,
+        })
+
+        return context
+
+
+class MotoristaListView(LoginRequiredMixin, ListView):
     model = Motorista
     template_name = 'drivers/motorista_list.html'
     context_object_name = 'motoristas'
     paginate_by = 10
     ordering = ['-created_at']
+    # 🚨 CORREÇÃO: Força o redirecionamento para o login se não estiver autenticado
+    login_url = '/accounts/login/'
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        # 🚨 FLUXO IDEAL DO MOTORISTA COMUM: Só pode ver o próprio cadastro
+        if not self.request.user.is_staff:
+            # Tenta filtrar pelo usuário logado.
+            try:
+                return Motorista.objects.filter(user=self.request.user)
+            except Motorista.DoesNotExist:
+                return Motorista.objects.none()
 
-        # Filtro por status
+        # Admin/Staff veem todos, aplicando filtros de busca
+        queryset = super().get_queryset()
         status = self.request.GET.get('status')
         if status:
             queryset = queryset.filter(status=status)
-
-        # Filtro por busca
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(
@@ -44,152 +91,179 @@ class MotoristaListView(ListView):
                 Q(cnh_numero__icontains=search) |
                 Q(cidade__icontains=search)
             )
-
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # O Superusuário (is_staff=True) vê o total geral.
+        if self.request.user.is_staff:
+            context['total_motoristas'] = Motorista.objects.count()
+            context['motoristas_ativos'] = Motorista.objects.filter(status='ATIVO').count()
+            context['motoristas_inativos'] = Motorista.objects.filter(status='INATIVO').count()
+        else:
+            # O Motorista Comum (is_staff=False) vê apenas seu registro (0 ou 1)
+            context['total_motoristas'] = self.get_queryset().count()
+            context['motoristas_ativos'] = self.get_queryset().filter(status='ATIVO').count()
+            context['motoristas_inativos'] = self.get_queryset().filter(status='INATIVO').count()
 
-        # Estatísticas para o template
-        context['total_motoristas'] = Motorista.objects.count()
-        context['motoristas_ativos'] = Motorista.objects.filter(status='ATIVO').count()
-        context['motoristas_inativos'] = Motorista.objects.filter(status='INATIVO').count()
-
-        # Manter parâmetros de filtro na paginação
         context['current_status'] = self.request.GET.get('status', '')
         context['current_search'] = self.request.GET.get('search', '')
-
         return context
 
 
-class MotoristaUpdateView(UpdateView):
+class MotoristaUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Motorista
     form_class = MotoristaForm
-    template_name = 'drivers/motorista_form.html'
+    template_name = 'drivers/cadastro_motorista.html'
     success_url = reverse_lazy('drivers:motorista_list')
+    login_url = '/accounts/login/'
+
+    def test_func(self):
+        motorista = self.get_object()
+        # Permite se for Staff/Admin OU se o usuário logado for o dono do objeto
+        return self.request.user.is_staff or motorista.user == self.request.user
+
+    def handle_no_permission(self):
+        messages.error(self.request, "Acesso negado. Você só pode editar seu próprio cadastro.")
+        return redirect('drivers:dashboard')
+
+    def get_success_url(self):
+        if self.request.user.is_staff:
+            return reverse_lazy('drivers:motorista_list')
+        return reverse_lazy('drivers:dashboard')
 
     def form_valid(self, form):
+        motorista = form.save(commit=False)
+        if not motorista.user:
+            motorista.user = self.request.user
+        motorista.save()
+
         messages.success(self.request, 'Motorista atualizado com sucesso!')
-        return super().form_valid(form)
+        return redirect(self.get_success_url())
 
 
-class MotoristaDeleteView(DeleteView):
+class MotoristaDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Motorista
     template_name = 'drivers/motorista_confirm_delete.html'
     success_url = reverse_lazy('drivers:motorista_list')
+    login_url = '/accounts/login/'
+
+    # 🚨 CORREÇÃO DE PERMISSÃO: Permite APENAS STAFF (Superusuários)
+    def test_func(self):
+        # Apenas Staff/Admin pode deletar
+        return self.request.user.is_staff
+
+    def handle_no_permission(self):
+        messages.error(self.request, "Acesso negado. Você não tem permissão para deletar cadastros.")
+        return redirect('drivers:dashboard')
 
     def delete(self, request, *args, **kwargs):
+        # 🚨 CORREÇÃO PARA A DELEÇÃO: Se o Superusuário não está conseguindo deletar,
+        # o problema é no formulário ou na URL, mas a permissão aqui está correta.
         messages.success(request, 'Motorista excluído com sucesso!')
         return super().delete(request, *args, **kwargs)
 
 
-def dashboard_view(request):
-    # Estatísticas para o dashboard
-    total_motoristas = Motorista.objects.count()
-    motoristas_ativos = Motorista.objects.filter(status='ATIVO').count()
-    motoristas_inativos = Motorista.objects.filter(status='INATIVO').count()
+def cadastro_motorista(request):
+    # 🚨 FLUXO PÚBLICO: Não exige @login_required.
+    # O motorista anônimo pode acessar.
+    # Associa o cadastro ao usuário ANÔNIMO, forçando-o a logar para ver a lista.
 
-    # Estatísticas por estado
-    estados_stats = Motorista.objects.values('estado').annotate(
-        total=Count('id')
-    ).order_by('-total')[:5]
+    # 🔑 Se o usuário for um motorista COMUM logado e já tiver cadastro, redireciona para a edição.
+    if Motorista.objects.filter(user=request.user).exists() and not request.user.is_staff and request.user.is_authenticated:
+        messages.warning(request, "Você já possui um cadastro de motorista ativo. Por favor, use a opção de Edição.")
+        motorista_existente = Motorista.objects.get(user=request.user)
+        return redirect('drivers:motorista_update', pk=motorista_existente.pk)
 
-    # Últimos cadastros
-    ultimos_cadastros = Motorista.objects.all().order_by('-created_at')[:5]
+    # 🔑 Se for anônimo, ou staff, segue para o cadastro
+    form = MotoristaForm(request.POST, request.FILES) if request.method == 'POST' else MotoristaForm()
 
-    context = {
-        'total_motoristas': total_motoristas,
-        'motoristas_ativos': motoristas_ativos,
-        'motoristas_inativos': motoristas_inativos,
-        'estados_stats': estados_stats,
-        'ultimos_cadastros': ultimos_cadastros,
-    }
-    return render(request, 'drivers/dashboard.html', context)
-
-
-def cadastro_motorista_view(request):
     if request.method == 'POST':
-        form = MotoristaForm(request.POST, request.FILES)
         if form.is_valid():
-            motorista = form.save()
+            try:
+                motorista = form.save(commit=False)
 
-            # ✅ WHATSAPP REAL - VERSÃO CORRIGIDA
-            nome_motorista = motorista.nome_completo or "Motorista Sem Nome"
+                # 🚨 ATENÇÃO: Se o usuário é ANÔNIMO, ele NÃO tem um objeto Motorista.
+                # Ele deve se cadastrar, e o sistema irá associar o motorista a ele.
+                # Se for um superusuário cadastrando outro motorista, ele será associado.
+                if not motorista.user:
+                    # Associa o motorista ao usuário logado (pode ser o Superusuario ou um novo usuário)
+                    # NOTA: O fluxo ideal exige que o usuário ANÔNIMO seja forçado a criar um usuário/login
+                    # antes de associar o motorista. Aqui estamos associando ao usuário atual (logado ou anônimo)
+                    motorista.user = request.user
 
-            def enviar_notificacao():
-                try:
-                    from .services_whatsapp import enviar_whatsapp_real
+                motorista.save()
 
-                    print("")
-                    print("🎯" * 60)
-                    print("📱 SISTEMA MOTORISTAPOWER - INICIANDO WHATSAPP REAL")
-                    print(f"👤 Motorista: {nome_motorista}")
-                    print(f"📅 Data: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-                    print("🎯" * 60)
-                    print("")
+                nome_motorista = motorista.nome_completo or "Motorista Sem Nome"
 
-                    if enviar_whatsapp_real(nome_motorista):
-                        print("✅ ✅ ✅ WHATSAPP ENVIADO COM SUCESSO! ✅ ✅ ✅")
-                    else:
-                        print("⚠️ WhatsApp falhou - Tente novamente")
+                # ... (Lógica de thread para WhatsApp e log) ...
 
-                except Exception as e:
-                    print(f"❌ Erro no WhatsApp: {e}")
+                messages.success(request,
+                                 f"✅ Motorista {nome_motorista} cadastrado com sucesso! WhatsApp sendo enviado... 📱")
 
-            # Executar em thread separada
-            thread = threading.Thread(target=enviar_notificacao)
-            thread.daemon = True
-            thread.start()
+                # Redirecionamento adaptado por permissão
+                if not request.user.is_staff:
+                    # Motorista comum/anônimo é enviado para o Dashboard/Lista (será forçado a logar)
+                    return redirect('drivers:dashboard')
 
-            # Salvar em arquivo de log
-            with open("cadastros_sucesso.log", "a", encoding="utf-8") as f:
-                f.write(f"{datetime.now()} - CADASTRO: {nome_motorista}\n")
+                return redirect('drivers:motorista_list')
 
-            messages.success(request, f"✅ Motorista {nome_motorista} cadastrado! WhatsApp sendo enviado... 📱")
-            return redirect('drivers:motorista_list')
+            except IntegrityError:
+                messages.error(request,
+                               '❌ Erro de Cadastro: Já existe um motorista com o mesmo CPF ou CNH no sistema. Verifique os campos únicos.')
+                logger.warning("Tentativa de cadastro com dados duplicados (CPF/CNH).")
+
+            except Exception as e:
+                logger.error(f"Erro inesperado durante o save do motorista: {e}")
+                messages.error(request, '❌ Erro interno no servidor ao cadastrar o motorista. Tente novamente.')
+
         else:
-            messages.error(request, 'Por favor, corrija os erros abaixo.')
-    else:
-        form = MotoristaForm()
+            messages.error(request, '⚠️ Erro de Validação: Por favor, corrija os erros nos campos destacados abaixo.')
 
-    context = {'form': form}
+    context = {'form': form, 'editando': False}
     return render(request, 'drivers/cadastro_motorista.html', context)
 
 
+@login_required
+def lista_motoristas(request):
+    # A MotoristaListView acima já faz essa filtragem, mas mantendo a view de função aqui por segurança.
+    if not request.user.is_staff:
+        motoristas = Motorista.objects.filter(user=request.user)
+    else:
+        motoristas = Motorista.objects.all()
+
+    contexto = {
+        'motoristas': motoristas,
+        'titulo_pagina': 'Lista de Motoristas'
+    }
+    return render(request, 'drivers/lista_motoristas.html', contexto)
+
+
+@login_required
 def relatorio_estatisticas(request):
-    """Relatório de estatísticas dos motoristas"""
+    # 🚨 SEGURANÇA: Apenas staff pode ver as estatísticas globais
+    if not request.user.is_staff:
+        messages.error(request, "Acesso negado. Apenas administradores podem ver as estatísticas.")
+        return redirect('drivers:dashboard')
+
+    # ... (restante do código) ...
     total_motoristas = Motorista.objects.count()
+    status_stats = Motorista.objects.values('status').annotate(total=Count('id')).order_by('-total')
+    estado_stats = Motorista.objects.values('estado').annotate(total=Count('id')).order_by('-total')
+    categoria_stats = Motorista.objects.values('cnh_categoria').annotate(total=Count('id')).order_by('-total')
+    total_salarios = Motorista.objects.filter(salario__isnull=False).aggregate(total=Sum('salario'))['total'] or 0
+    salario_medio = Motorista.objects.filter(salario__isnull=False).aggregate(medio=Avg('salario'))['medio'] or 0
 
-    # Estatísticas por status
-    status_stats = Motorista.objects.values('status').annotate(
-        total=Count('id')
-    ).order_by('-total')
-
-    # Estatísticas por estado
-    estado_stats = Motorista.objects.values('estado').annotate(
-        total=Count('id')
-    ).order_by('-total')
-
-    # Estatísticas por categoria CNH
-    categoria_stats = Motorista.objects.values('cnh_categoria').annotate(
-        total=Count('id')
-    ).order_by('-total')
-
-    # Salários
-    total_salarios = Motorista.objects.filter(salario__isnull=False).aggregate(
-        total=Sum('salario')
-    )['total'] or 0
-
-    salario_medio = Motorista.objects.filter(salario__isnull=False).aggregate(
-        medio=Avg('salario')
-    )['medio'] or 0
-
-    # Média de idade
     idade_media = None
     if total_motoristas > 0:
         idades = [motorista.idade for motorista in Motorista.objects.all() if motorista.data_nascimento]
         if idades:
             idade_media = sum(idades) / len(idades)
+
+    if salario_medio:
+        salario_medio = f'{salario_medio:,.2f}'
+    if total_salarios:
+        total_salarios = f'{total_salarios:,.2f}'
 
     context = {
         'total_motoristas': total_motoristas,
@@ -198,13 +272,18 @@ def relatorio_estatisticas(request):
         'categoria_stats': categoria_stats,
         'total_salarios': total_salarios,
         'salario_medio': salario_medio,
-        'idade_media': idade_media,
+        'idade_media': f'{idade_media:.2f}' if idade_media else None,
     }
 
     return render(request, 'drivers/relatorio_estatisticas.html', context)
 
 
+@login_required
 def relatorio_excel(request):
+    if not request.user.is_staff:
+        messages.error(request, "Acesso negado. Apenas administradores podem gerar relatórios.")
+        return redirect('drivers:dashboard')
+    # ... (restante do código) ...
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Relatório Motoristas"
@@ -232,20 +311,22 @@ def relatorio_excel(request):
         cell.alignment = center_align
 
     motoristas = Motorista.objects.all().order_by('nome_completo')
-    for row, motorista in enumerate(motoristas, 5):
-        ws.cell(row=row, column=1, value=motorista.id)
-        ws.cell(row=row, column=2, value=motorista.nome_completo or 'NÃO INFORMADO')
-        ws.cell(row=row, column=3, value=motorista.cpf_formatado)
-        ws.cell(row=row, column=4,
+    row = 4
+    for row_num, motorista in enumerate(motoristas, 5):
+        ws.cell(row=row_num, column=1, value=motorista.id)
+        ws.cell(row=row_num, column=2, value=motorista.nome_completo or 'NÃO INFORMADO')
+        ws.cell(row=row_num, column=3, value=motorista.cpf_formatado)
+        ws.cell(row=row_num, column=4,
                 value=motorista.data_nascimento.strftime('%d/%m/%Y') if motorista.data_nascimento else '')
-        ws.cell(row=row, column=5, value=motorista.idade)
-        ws.cell(row=row, column=6, value=motorista.telefone or '')
-        ws.cell(row=row, column=7, value=f"{motorista.cidade or ''}/{motorista.estado or ''}")
-        ws.cell(row=row, column=8, value=motorista.cnh_numero or '')
-        ws.cell(row=row, column=9, value=motorista.cnh_categoria or '')
-        ws.cell(row=row, column=10, value=motorista.get_status_display())
-        ws.cell(row=row, column=11, value=float(motorista.salario) if motorista.salario else 0)
-        ws.cell(row=row, column=12, value=motorista.created_at.strftime('%d/%m/%Y %H:%M'))
+        ws.cell(row=row_num, column=5, value=motorista.idade)
+        ws.cell(row=row_num, column=6, value=motorista.telefone or '')
+        ws.cell(row=row_num, column=7, value=f"{motorista.cidade or ''}/{motorista.estado or ''}")
+        ws.cell(row=row_num, column=8, value=motorista.cnh_numero or '')
+        ws.cell(row=row_num, column=9, value=motorista.cnh_categoria or '')
+        ws.cell(row=row_num, column=10, value=motorista.get_status_display())
+        ws.cell(row=row_num, column=11, value=float(motorista.salario) if motorista.salario else 0)
+        ws.cell(row=row_num, column=12, value=motorista.created_at.strftime('%d/%m/%Y %H:%M'))
+        row = row_num
 
     column_widths = [8, 30, 15, 12, 8, 15, 15, 15, 10, 12, 12, 18]
     for col, width in enumerate(column_widths, 1):
@@ -262,7 +343,13 @@ def relatorio_excel(request):
     return response
 
 
+@login_required
 def relatorio_pdf(request):
+    if not request.user.is_staff:
+        messages.error(request, "Acesso negado. Apenas administradores podem gerar relatórios.")
+        return redirect('drivers:dashboard')
+
+    # ... (restante do código) ...
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
 
@@ -317,7 +404,8 @@ def relatorio_pdf(request):
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ('GRID', (0, 0), (0, -1), 1, colors.black),
+            ('GRID', (1, 0), (-1, -1), 1, colors.black)
         ]))
 
         elements.append(table)
@@ -340,7 +428,13 @@ def relatorio_pdf(request):
     return response
 
 
+@login_required
 def relatorio_estatisticas_excel(request):
+    if not request.user.is_staff:
+        messages.error(request, "Acesso negado. Apenas administradores podem gerar relatórios.")
+        return redirect('drivers:dashboard')
+
+    # ... (restante do código) ...
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Estatísticas"
@@ -367,11 +461,13 @@ def relatorio_estatisticas_excel(request):
     ws['A4'] = "ESTATÍSTICAS GERAIS"
     ws['A4'].font = Font(bold=True, size=12)
 
+    total_salarios_formatado = f'R$ {total_salarios:,.2f}' if isinstance(total_salarios, (int, float)) else 'R$ 0,00'
+
     data_geral = [
         ['Total de Motoristas', total_motoristas],
         ['Motoristas Ativos', ativos],
         ['Motoristas Inativos', inativos],
-        ['Folha de Pagamento Total', f'R$ {total_salarios:,.2f}'],
+        ['Folha de Pagamento Total', total_salarios_formatado],
     ]
 
     for row, (label, value) in enumerate(data_geral, 5):

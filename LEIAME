@@ -1,4 +1,7 @@
+python manage.py runserver 0.0.0.0:8000C
+
 python manage.py runserver
+
 
 📚 TUTORIAL COMPLETO: Deploy Django no Railway
 🎯 RESUMO DO QUE FOI FEITO
@@ -230,3 +233,5 @@ Mantenha o requirements.txt atualizado
 Siga o checklist
 
 Agora você é um expert em deploy Django no Railway! 🎓🚀
+
+

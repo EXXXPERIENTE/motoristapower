@@ -57,6 +57,8 @@ ROOT_URLCONF = 'fleet.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        # 🔑 CORREÇÃO CRÍTICA: Use os.path.join para compatibilidade e certeza
+        # ou use a notação Path(). Aqui usamos Path para manter seu padrão.
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -124,6 +126,15 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # ✅ Default primary key
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 🔑 CONFIGURAÇÕES DE AUTENTICAÇÃO (ADICIONADAS PARA RESOLVER REDIRECIONAMENTO)
+# URL para redirecionar após o login
+LOGIN_REDIRECT_URL = 'drivers:dashboard'
+
+# URL para a página de login (o Django a usa para proteger views)
+# Já está correto como /accounts/login/ por padrão
+LOGIN_URL = 'login'
+# Se o nome da URL for 'login' (que é o nome dado pelo 'django.contrib.auth.urls')
 
 # ✅ Segurança para produção
 if not DEBUG:

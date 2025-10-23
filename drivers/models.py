@@ -1,63 +1,93 @@
 from django.db import models
+from django.core.validators import RegexValidator
 from datetime import date
-import os
-from .validators import validar_cpf, formatar_cpf, validar_categoria_cnh  # ← ADICIONE O NOVO VALIDADOR
+from django.contrib.auth.models import User # NOVO: Importa o modelo de Usuário do Django
 
 
 class Motorista(models.Model):
-    foto = models.ImageField(
-        'Foto do Motorista',
-        upload_to='motoristas/fotos/',
-        blank=True,
-        null=True,
-        help_text='Foto 3x4 do motorista'
-    )
+    CATEGORIA_CNH_CHOICES = [
+        ('A', 'A - Moto'),
+        ('B', 'B - Carro'),
+        ('C', 'C - Caminhão'),
+        ('D', 'D - Ônibus'),
+        ('E', 'E - Reboque'),
+    ]
 
-    nome_completo = models.CharField('Nome Completo', max_length=100)
-    cpf = models.CharField('CPF', max_length=14, unique=True, validators=[validar_cpf])
-    data_nascimento = models.DateField('Data de Nascimento')
-    email = models.EmailField('E-mail', blank=True, null=True)
-    telefone = models.CharField('Telefone', max_length=15, blank=True, null=True)
+    STATUS_CHOICES = [
+        ('ATIVO', 'Ativo'),
+        ('INATIVO', 'Inativo'),
+        ('FERIAS', 'Férias'),
+        ('AFASTADO', 'Afastado'),
+    ]
 
-    cidade = models.CharField('Cidade', max_length=50, blank=True, null=True)
-    estado = models.CharField('Estado', max_length=2, choices=[
+    ESTADO_CHOICES = [
         ('AC', 'Acre'), ('AL', 'Alagoas'), ('AP', 'Amapá'), ('AM', 'Amazonas'),
         ('BA', 'Bahia'), ('CE', 'Ceará'), ('DF', 'Distrito Federal'), ('ES', 'Espírito Santo'),
         ('GO', 'Goiás'), ('MA', 'Maranhão'), ('MT', 'Mato Grosso'), ('MS', 'Mato Grosso do Sul'),
         ('MG', 'Minas Gerais'), ('PA', 'Pará'), ('PB', 'Paraíba'), ('PR', 'Paraná'),
         ('PE', 'Pernambuco'), ('PI', 'Piauí'), ('RJ', 'Rio de Janeiro'), ('RN', 'Rio Grande do Norte'),
         ('RS', 'Rio Grande do Sul'), ('RO', 'Rondônia'), ('RR', 'Roraima'), ('SC', 'Santa Catarina'),
-        ('SP', 'São Paulo'), ('SE', 'Sergipe'), ('TO', 'Tocantins')
-    ], blank=True, null=True)
+        ('SP', 'São Paulo'), ('SE', 'Sergipe'), ('TO', 'Tocantins'),
+    ]
 
-    cnh_numero = models.CharField('Número da CNH', max_length=20, blank=True, null=True)
-    cnh_categoria = models.CharField(
-        'Categoria CNH',
-        max_length=5,
-        choices=[('E', 'E')],  # ← SOMENTE CATEGORIA E
+    # 🔑 NOVO CAMPO: Vínculo com o usuário do Django que criou/é o dono do cadastro
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        null=True,  # Permite que cadastros antigos (ou criados pelo Admin) não tenham usuário
         blank=True,
-        null=True,
-        validators=[validar_categoria_cnh]  # ← ADICIONE O VALIDADOR
+        verbose_name='Usuário Associado'
     )
 
-    data_admissao = models.DateField('Data de Admissão', blank=True, null=True)
-    salario = models.DecimalField('Salário', max_digits=10, decimal_places=2, blank=True, null=True)
+    # Dados Pessoais
+    nome_completo = models.CharField(max_length=100, verbose_name='Nome Completo')
+    cpf = models.CharField(
+        max_length=14,  # Mantido 14 (máscara)
+        unique=True,
+        verbose_name='CPF',
+        validators=[
+            RegexValidator(regex=r'^\d{3}\.\d{3}\.\d{3}-\d{2}$', message='CPF deve estar no formato: 000.000.000-00')]
+    )
+    data_nascimento = models.DateField(verbose_name='Data de Nascimento')
+    email = models.EmailField(verbose_name='E-mail')
+    telefone = models.CharField(
+        max_length=15,
+        verbose_name='Telefone',
+        validators=[RegexValidator(regex=r'^\(\d{2}\)\s?\d{4,5}-\d{4}$',
+                                   message='Telefone deve estar no formato: (00) 00000-0000')]
+    )
 
-    STATUS_CHOICES = [
-        ('ATIVO', 'Ativo'),
-        ('AFASTADO', 'Afastado'),
-        ('FERIAS', 'Férias'),
-        ('INATIVO', 'Inativo')
-    ]
-    status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='ATIVO')
+    # Endereço
+    cep = models.CharField(max_length=9, verbose_name='CEP', default='')
+    endereco = models.CharField(max_length=200, verbose_name='Endereço')
+    numero = models.CharField(max_length=10, verbose_name='Número')
+    complemento = models.CharField(max_length=100, verbose_name='Complemento', blank=True)
+    bairro = models.CharField(max_length=100, verbose_name='Bairro')
+    cidade = models.CharField(max_length=100, verbose_name='Cidade')
+    estado = models.CharField(max_length=2, choices=ESTADO_CHOICES, verbose_name='Estado')
 
-    created_at = models.DateTimeField('Data de Cadastro', auto_now_add=True)
-    updated_at = models.DateTimeField('Última Atualização', auto_now=True)
+    # Documentação CNH
+    cnh_numero = models.CharField(max_length=11, unique=True, verbose_name='Número da CNH')
+    cnh_categoria = models.CharField(max_length=2, choices=CATEGORIA_CNH_CHOICES, verbose_name='Categoria CNH')
+    cnh_validade = models.DateField(verbose_name='Validade da CNH')
+    cnh_emissao = models.DateField(verbose_name='Data de Emissão')
+
+    # NOVO CAMPO DE FOTO
+    foto = models.ImageField(upload_to='motorista_fotos/', null=True, blank=True, verbose_name='Foto')
+
+    # Status e controle
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ATIVO', verbose_name='Status')
+    salario = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Salário')
+    observacoes = models.TextField(blank=True, verbose_name='Observações')
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Data de Cadastro')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Última Atualização')
 
     class Meta:
         verbose_name = 'Motorista'
         verbose_name_plural = 'Motoristas'
-        ordering = ['-created_at']
+        ordering = ['nome_completo']
 
     def __str__(self):
         return self.nome_completo
@@ -66,61 +96,22 @@ class Motorista(models.Model):
     def idade(self):
         if not self.data_nascimento:
             return None
-        hoje = date.today()
-        idade = hoje.year - self.data_nascimento.year
-        if hoje.month < self.data_nascimento.month or (
-                hoje.month == self.data_nascimento.month and hoje.day < self.data_nascimento.day
-        ):
-            idade -= 1
-        return idade
+        today = date.today()
+        return today.year - self.data_nascimento.year - (
+                (today.month, today.day) < (self.data_nascimento.month, self.data_nascimento.day)
+        )
 
     @property
     def cpf_formatado(self):
-        return formatar_cpf(self.cpf)
+        # Manteve a lógica robusta para CPFs com ou sem máscara
+        cpf = self.cpf.replace('.', '').replace('-', '')
+        if cpf and len(cpf) == 11:
+            return f'{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}'
+        return self.cpf or ''
 
-    @property
-    def tem_foto(self):
-        return bool(self.foto)
-
-    def get_status_display(self):
-        """Retorna o display do status"""
-        for status_code, status_name in self.STATUS_CHOICES:
-            if status_code == self.status:
-                return status_name
-        return self.status
-
-    def clean(self):
-        """
-        Validação no nível do modelo para CPF duplicado
-        """
-        from django.core.exceptions import ValidationError
-        import re
-
-        super().clean()
-
-        # Verifica se já existe outro motorista com o mesmo CPF
-        if self.cpf:
-            cpf_limpo = re.sub(r'[^0-9]', '', self.cpf)
-            motoristas_com_mesmo_cpf = Motorista.objects.filter(
-                cpf__icontains=cpf_limpo
-            ).exclude(pk=self.pk)
-
-            if motoristas_com_mesmo_cpf.exists():
-                raise ValidationError({
-                    'cpf': 'Este CPF já está cadastrado no sistema.'
-                })
-
-    def save(self, *args, **kwargs):
-        # Valida o modelo antes de salvar
-        self.full_clean()
-
-        # Formata o CPF antes de salvar
-        if self.cpf:
-            self.cpf = validar_cpf(self.cpf)
-        super().save(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        if self.foto:
-            if os.path.isfile(self.foto.path):
-                os.remove(self.foto.path)
-        super().delete(*args, **kwargs)
+    def cnh_proxima_vencer(self):
+        if not self.cnh_validade:
+            return False
+        today = date.today()
+        days_until_expiry = (self.cnh_validade - today).days
+        return 0 <= days_until_expiry <= 30
