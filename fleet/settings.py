@@ -1,6 +1,6 @@
 """
 Django settings for fleet project.
-VERSÃO CORRIGIDA - MOBILE COMPATIBLE
+VERSÃO CORRIGIDA - SEM DEPENDÊNCIAS EXTERNAS
 """
 
 import os
@@ -121,20 +121,26 @@ LOGIN_REDIRECT_URL = 'drivers:dashboard'
 LOGIN_URL = 'login'
 LOGOUT_REDIRECT_URL = 'login'
 
-# ✅ 🔥 CORREÇÕES CRÍTICAS PARA MOBILE 🔥
+# ✅ 🔥 CONFIGURAÇÕES DE SENHA CORRIGIDAS 🔥
+# Usando apenas hashers que vêm com Django (sem dependências externas)
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
 
-# Configurações de sessão para mobile compatibility
+# ✅ Configurações de sessão para mobile compatibility
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 semanas
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'  # Compatível com mobile
 
-# CSRF settings para mobile
+# ✅ CSRF settings para mobile
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False  # Permite JavaScript access
 CSRF_COOKIE_SAMESITE = 'Lax'
 
-# Security settings diferenciados para dev/prod
+# ✅ Security settings diferenciados para dev/prod
 if DEBUG:
     # Desenvolvimento - menos restritivo para testing
     SESSION_COOKIE_SECURE = False
@@ -152,49 +158,17 @@ else:
 # ✅ Railway config
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# ✅ Backend de autenticação customizado (se necessário)
+# ✅ Backend de autenticação
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# ✅ Configurações de senha
-PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.Argon2PasswordHasher',
-    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
-]
-
-# ✅ Logging para debug
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO' if DEBUG else 'WARNING',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO' if DEBUG else 'WARNING',
-            'propagate': False,
-        },
-    },
-}
-
 # ✅ Debug information
 print("=" * 60)
-print("🚀 MotoristaPower - Configuração Otimizada Carregada!")
+print("🚀 MotoristaPower - Configuração Corrigida Carregada!")
 print(f"🔧 DEBUG: {DEBUG}")
 print(f"🌐 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-print(f"📱 Mobile Compatible: True")
-print(f"🔐 CSRF Cookie Secure: {CSRF_COOKIE_SECURE}")
-print(f"🔐 Session Cookie Secure: {SESSION_COOKIE_SECURE}")
+print(f"🔐 Password Hashers: PBKDF2, BCrypt (sem Argon2)")
 print("=" * 60)
 
 # ✅ Criar diretórios automaticamente se não existirem
