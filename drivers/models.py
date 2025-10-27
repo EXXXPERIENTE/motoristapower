@@ -116,7 +116,6 @@ class Motorista(models.Model):
 
     @property
     def cpf_formatado(self):
-        # Manteve a lógica robusta para CPFs com ou sem máscara
         cpf = self.cpf.replace('.', '').replace('-', '')
         if cpf and len(cpf) == 11:
             return f'{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}'

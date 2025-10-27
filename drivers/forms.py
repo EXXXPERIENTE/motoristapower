@@ -21,7 +21,6 @@ class MotoristaForm(forms.ModelForm):
             'observacoes': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
             'nome_completo': forms.TextInput(
                 attrs={'class': 'form-control', 'placeholder': 'Nome completo do motorista'}),
-            # maxlength 14 para o formato 000.000.000-00 (máscara)
             'cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00', 'maxlength': 14}),
             # ✅ NOVO CAMPO: MEI
             'mei_numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00', 'maxlength': 18}),
@@ -47,18 +46,15 @@ class MotoristaForm(forms.ModelForm):
             # Verifica se o MEI está no formato 00.000.000/0000-00 (18 caracteres)
             if not re.match(r'^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$', mei):
                 raise forms.ValidationError('MEI deve estar no formato: 00.000.000/0000-00 (18 caracteres)')
-            # Retorna o valor formatado (18 caracteres) para o banco de dados.
             return mei
         return mei
 
-    # Validação do CPF: Garante que o formato de 14 caracteres seja respeitado
+    # Validação do CPF
     def clean_cpf(self):
         cpf = self.cleaned_data.get('cpf')
         if cpf:
-            # Verifica se o CPF está no formato 000.000.000-00 (14 caracteres)
             if not re.match(r'^\d{3}\.\d{3}\.\d{3}-\d{2}$', cpf):
                 raise forms.ValidationError('CPF deve estar no formato: 000.000.000-00 (14 caracteres)')
-            # Retorna o valor formatado (14 caracteres) para o banco de dados.
             return cpf
         return cpf
 
