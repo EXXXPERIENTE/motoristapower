@@ -25,6 +25,7 @@ ALLOWED_HOSTS = [
     '.up.railway.app',
     'dynamic-grace.up.railway.app',
     'web-production-bda2e.up.railway.app',
+    'web-production-d6c97.up.railway.app',  # ✅ ADICIONADO SEU DOMÍNIO ATUAL
 ]
 
 # ✅ Application definition
@@ -163,6 +164,19 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
+# ✅ CSRF trusted origins para Railway
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://web-production-d6c97.up.railway.app',
+    'https://web-production-273f1.up.railway.app',
+]
+
+# ✅ Criar diretórios automaticamente se não existirem
+os.makedirs(STATIC_ROOT, exist_ok=True)
+os.makedirs(BASE_DIR / 'static', exist_ok=True)
+os.makedirs(MEDIA_ROOT, exist_ok=True)
+os.makedirs(BASE_DIR / 'templates', exist_ok=True)
+
 # ✅ Debug information
 print("=" * 60)
 print("🚀 MotoristaPower - Configuração Corrigida Carregada!")
@@ -171,23 +185,63 @@ print(f"🌐 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 print(f"🔐 Password Hashers: PBKDF2, BCrypt (sem Argon2)")
 print("=" * 60)
 
-# ✅ Criar diretórios automaticamente se não existirem
-os.makedirs(STATIC_ROOT, exist_ok=True)
-os.makedirs(BASE_DIR / 'static', exist_ok=True)
-os.makedirs(MEDIA_ROOT, exist_ok=True)
-os.makedirs(BASE_DIR / 'templates', exist_ok=True)
-# CRIA SUPERUSUÁRIO AUTOMATICAMENTE
-import os
-from django.contrib.auth import get_user_model
+# =============================================================================
+# 🔥 CRIAÇÃO AUTOMÁTICA DE SUPERUSUÁRIO - VERSÃO CORRIGIDA
+# =============================================================================
 
-# Só executa no Railway
-if os.environ.get('RAILWAY_ENVIRONMENT'):
+# CRIA SUPERUSUÁRIO AUTOMATICAMENTE NO RAILWAY
+import django
+from django.core.management import execute_from_command_line
+
+
+# Só tenta criar o usuário depois que o Django estiver completamente configurado
+def create_superuser():
     try:
+        # Import aqui para evitar circular imports
+        from django.contrib.auth import get_user_model
         User = get_user_model()
-        if not User.objects.filter(username='admin').exists():
-            User.objects.create_superuser('admin', 'admin@example.com', '123456')
-            print('🎉 USUÁRIO ADMIN CRIADO: admin / 123456')
-        else:
-            print('✅ Usuário admin já existe')
+
+        # Remove usuário admin existente se houver
+        User.objects.filter(username='admin').delete()
+
+        # Cria novo superusuário
+        user = User.objects.create_superuser(
+            username='admin',
+            email='admin@example.com',
+            password='123456'
+        )
+        print('🎉 SUPERUSUÁRIO CRIADO NO RAILWAY: admin / 123456')
+        return True
+
     except Exception as e:
-        print(f'⚠️ Erro ao criar usuário: {e}')s
+        print(f'Observação ao criar usuário: {e}')
+        return False
+
+
+# Tenta criar o superusuário quando estiver no Railway
+if os.environ.get('RAILWAY_PUBLIC_DOMAIN') or os.environ.get('RAILWAY_ENVIRONMENT'):
+    try:
+        # Garante que o Django está configurado
+        django.setup()
+        create_superuser()
+    except:
+        # Se falhar, tenta depois que o app estiver rodando
+        pass
+
+# Método alternativo: cria quando o app inicia
+try:
+    from django.db import connections
+    from django.db.utils import OperationalError
+
+    # Verifica se o banco está pronto
+    db_conn = connections['default']
+    db_conn.cursor()
+
+    # Se chegou aqui, o banco está pronto - cria o usuário
+    create_superuser()
+
+except OperationalError:
+    # Banco não está pronto ainda, ignora
+    pass
+except Exception as e:
+    print(f'Erro na criação automática: {e}')
