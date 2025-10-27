@@ -1,20 +1,19 @@
 from django.contrib import admin
 from .models import Motorista
 
-
 @admin.register(Motorista)
 class MotoristaAdmin(admin.ModelAdmin):
     list_display = [
-        'nome_completo', 'cpf_formatado', 'idade', 'cidade', 'estado',
+        'nome_completo', 'cpf_formatado', 'mei_numero', 'idade', 'cidade', 'estado',
         'cnh_categoria', 'status', 'created_at'
     ]
     list_filter = ['status', 'estado', 'cnh_categoria', 'created_at']
-    search_fields = ['nome_completo', 'cpf', 'cnh_numero', 'cidade']
+    search_fields = ['nome_completo', 'cpf', 'mei_numero', 'cnh_numero', 'cidade']
     readonly_fields = ['created_at', 'updated_at']
     fieldsets = [
         ('Dados Pessoais', {
             'fields': [
-                'nome_completo', 'cpf', 'data_nascimento', 'email', 'telefone'
+                'nome_completo', 'cpf', 'mei_numero', 'data_nascimento', 'email', 'telefone'
             ]
         }),
         ('Endereço', {

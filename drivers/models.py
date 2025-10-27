@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import RegexValidator
 from datetime import date
-from django.contrib.auth.models import User # NOVO: Importa o modelo de Usuário do Django
+from django.contrib.auth.models import User
 
 
 class Motorista(models.Model):
@@ -34,7 +34,7 @@ class Motorista(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        null=True,  # Permite que cadastros antigos (ou criados pelo Admin) não tenham usuário
+        null=True,
         blank=True,
         verbose_name='Usuário Associado'
     )
@@ -42,12 +42,25 @@ class Motorista(models.Model):
     # Dados Pessoais
     nome_completo = models.CharField(max_length=100, verbose_name='Nome Completo')
     cpf = models.CharField(
-        max_length=14,  # Mantido 14 (máscara)
+        max_length=14,
         unique=True,
         verbose_name='CPF',
         validators=[
             RegexValidator(regex=r'^\d{3}\.\d{3}\.\d{3}-\d{2}$', message='CPF deve estar no formato: 000.000.000-00')]
     )
+
+    # ✅ NOVO CAMPO: MEI (Microempreendedor Individual)
+    mei_numero = models.CharField(
+        max_length=18,
+        unique=True,
+        verbose_name='Número do MEI',
+        blank=True,
+        null=True,
+        validators=[
+            RegexValidator(regex=r'^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$',
+                           message='MEI deve estar no formato: 00.000.000/0000-00')]
+    )
+
     data_nascimento = models.DateField(verbose_name='Data de Nascimento')
     email = models.EmailField(verbose_name='E-mail')
     telefone = models.CharField(

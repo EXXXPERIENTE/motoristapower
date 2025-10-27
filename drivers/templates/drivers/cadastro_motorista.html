@@ -172,24 +172,28 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.cpf.id_for_label }}" class="form-label fw-bold">
-                                        <i class="bi bi-credit-card"></i> CPF
-                                    </label>
-                                    <input type="text"
-                                           name="{{ form.cpf.name }}"
-                                           class="form-control {% if form.cpf.errors %}is-invalid{% endif %}"
-                                           id="{{ form.cpf.id_for_label }}"
-                                           value="{{ form.cpf.value|default:'' }}"
-                                           placeholder="000.000.000-00"
-                                           onblur="validarCPF(this)"
-                                           oninput="aplicarMascaraCPF(this)"
-                                           maxlength="14"
-                                           required>
-                                    <div class="invalid-feedback" id="{{ form.cpf.id_for_label }}-erro">
-                                        {% for error in form.cpf.errors %}{{ error }}<br>{% endfor %}
-                                    </div>
-                                </div>
+                              <!-- ✅ NOVO CAMPO: MEI - Adicione DEPOIS do campo CPF e ANTES do campo Data Nascimento -->
+
+<div class="col-md-6 mb-3">
+    <label for="{{ form.mei_numero.id_for_label }}" class="form-label fw-bold">
+        <i class="bi bi-building"></i> Número do MEI
+    </label>
+    <input type="text"
+           name="{{ form.mei_numero.name }}"
+           class="form-control {% if form.mei_numero.errors %}is-invalid{% endif %}"
+           id="{{ form.mei_numero.id_for_label }}"
+           value="{{ form.mei_numero.value|default:'' }}"
+           placeholder="00.000.000/0000-00"
+           onblur="validarMEI(this)"
+           oninput="aplicarMascaraMEI(this)"
+           maxlength="18">
+    <div class="invalid-feedback" id="{{ form.mei_numero.id_for_label }}-erro">
+        {% for error in form.mei_numero.errors %}{{ error }}<br>{% endfor %}
+    </div>
+    <div class="form-text text-muted">
+        Formato: 00.000.000/0000-00 (opcional)
+    </div>
+</div>
 
                                 <div class="col-md-6 mb-3">
                                    <label for="{{ form.data_nascimento.id_for_label }}" class="form-label fw-bold">
@@ -671,3 +675,77 @@
     </script>
 </body>
 </html>
+// ========== NOVAS FUNÇÕES PARA MEI ==========
+
+function validarMEI(campo) {
+    const mei = campo.value;
+    if (mei) { // MEI é opcional, só valida se preenchido
+        const regex = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
+        if (!regex.test(mei)) {
+            mostrarErro(campo, 'MEI deve estar no formato: 00.000.000/0000-00');
+            return false;
+        }
+        mostrarSucesso(campo);
+    } else {
+        // Se estiver vazio, remove as classes de validação
+        campo.classList.remove('is-invalid');
+        campo.classList.remove('is-valid');
+    }
+    return true;
+}
+
+function aplicarMascaraMEI(campo) {
+    let valor = campo.value.replace(/\D/g, '');
+    // Limita a 14 dígitos (CNPJ básico)
+    valor = valor.substring(0, 14);
+
+    if (valor.length > 12) {
+        valor = valor.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    } else if (valor.length > 8) {
+        valor = valor.replace(/^(\d{2})(\d{3})(\d{3})(\d{0,4})$/, '$1.$2.$3/$4');
+    } else if (valor.length > 5) {
+        valor = valor.replace(/^(\d{2})(\d{3})(\d{0,3})$/, '$1.$2.$3');
+    } else if (valor.length > 2) {
+        valor = valor.replace(/^(\d{2})(\d{0,3})$/, '$1.$2');
+    }
+    campo.value = valor;
+}
+
+// ========== ATUALIZE A VALIDAÇÃO DO FORMULÁRIO ==========
+
+// Adicione 'id_mei_numero' na lista de campos para validação
+document.getElementById('motoristaForm').addEventListener('submit', function(e) {
+    const campos = [
+        'id_nome_completo', 'id_cpf', 'id_mei_numero', 'id_telefone', 'id_endereco',
+        'id_cidade', 'id_estado', 'id_cep', 'id_cnh_numero',
+        'id_cnh_categoria'
+    ];
+
+    let formularioValido = true;
+
+    campos.forEach(campoId => {
+        const campo = document.getElementById(campoId);
+        if (campo) {
+            const nomeFuncao = campoId.replace('id_', '');
+            const funcaoValidacao = 'validar' + nomeFuncao.charAt(0).toUpperCase() + nomeFuncao.slice(1);
+
+            if (typeof window[funcaoValidacao] === 'function') {
+                if (!window[funcaoValidacao](campo)) {
+                    formularioValido = false;
+                } else if (campo.classList.contains('is-invalid')) {
+                    formularioValido = false;
+                }
+            }
+        }
+    });
+
+    if (!formularioValido) {
+        e.preventDefault();
+        alert('❌ Por favor, corrija os erros destacados em vermelho antes de enviar o formulário.');
+
+        const primeiroErro = document.querySelector('.is-invalid');
+        if (primeiroErro) {
+            primeiroErro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+});

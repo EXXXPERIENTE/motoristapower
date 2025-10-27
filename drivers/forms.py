@@ -3,19 +3,15 @@ from .models import Motorista
 from datetime import date
 import re
 
-
 class MotoristaForm(forms.ModelForm):
     class Meta:
         model = Motorista
-        # 'foto' agora existe no model e é incluído aqui.
         fields = [
-            'nome_completo', 'cpf', 'data_nascimento', 'email', 'telefone',
+            'nome_completo', 'cpf', 'mei_numero', 'data_nascimento', 'email', 'telefone',
             'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'estado',
             'cnh_numero', 'cnh_categoria', 'cnh_validade', 'cnh_emissao',
             'status', 'observacoes', 'foto',
         ]
-        # 'salario' é explicitamente excluído do formulário,
-        # garantindo que ele não apareça.
         exclude = ('salario',)
 
         widgets = {
@@ -27,6 +23,8 @@ class MotoristaForm(forms.ModelForm):
                 attrs={'class': 'form-control', 'placeholder': 'Nome completo do motorista'}),
             # maxlength 14 para o formato 000.000.000-00 (máscara)
             'cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00', 'maxlength': 14}),
+            # ✅ NOVO CAMPO: MEI
+            'mei_numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00', 'maxlength': 18}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@exemplo.com'}),
             'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
             'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000'}),
@@ -41,6 +39,17 @@ class MotoristaForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-control'}),
             'foto': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
         }
+
+    # ✅ NOVA VALIDAÇÃO: MEI
+    def clean_mei_numero(self):
+        mei = self.cleaned_data.get('mei_numero')
+        if mei:
+            # Verifica se o MEI está no formato 00.000.000/0000-00 (18 caracteres)
+            if not re.match(r'^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$', mei):
+                raise forms.ValidationError('MEI deve estar no formato: 00.000.000/0000-00 (18 caracteres)')
+            # Retorna o valor formatado (18 caracteres) para o banco de dados.
+            return mei
+        return mei
 
     # Validação do CPF: Garante que o formato de 14 caracteres seja respeitado
     def clean_cpf(self):
