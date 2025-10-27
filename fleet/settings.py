@@ -176,3 +176,18 @@ os.makedirs(STATIC_ROOT, exist_ok=True)
 os.makedirs(BASE_DIR / 'static', exist_ok=True)
 os.makedirs(MEDIA_ROOT, exist_ok=True)
 os.makedirs(BASE_DIR / 'templates', exist_ok=True)
+# CRIA SUPERUSUÁRIO AUTOMATICAMENTE
+import os
+from django.contrib.auth import get_user_model
+
+# Só executa no Railway
+if os.environ.get('RAILWAY_ENVIRONMENT'):
+    try:
+        User = get_user_model()
+        if not User.objects.filter(username='admin').exists():
+            User.objects.create_superuser('admin', 'admin@example.com', '123456')
+            print('🎉 USUÁRIO ADMIN CRIADO: admin / 123456')
+        else:
+            print('✅ Usuário admin já existe')
+    except Exception as e:
+        print(f'⚠️ Erro ao criar usuário: {e}')s
