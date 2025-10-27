@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoristaPower - Sistema de Cadastro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .hero-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .card-feature {
+            border: none;
+            border-radius: 15px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+        .card-feature:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        .icon-feature {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .btn-custom {
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-custom:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-3" href="#">
+                <i class="bi bi-truck"></i>
+                <span class="text-warning">Motorista</span>Power
+            </a>
+            <div class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'drivers:dashboard' %}" class="btn btn-outline-light me-2">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'logout' %}" class="btn btn-outline-light">
+                        <i class="bi bi-box-arrow-right"></i> Sair
+                    </a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-outline-light">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <div class="container py-5">
+        <div class="hero-section p-5 my-5">
+            <!-- Cabeçalho -->
+            <div class="text-center mb-5">
+                <div class="display-1 mb-3">🚗</div>
+                <h1 class="display-4 fw-bold text-gradient mb-3">
+                    MotoristaPower
+                </h1>
+                <p class="lead text-muted fs-4">
+                    Sistema de Cadastro e Gerenciamento de Motoristas
+                </p>
+            </div>
+
+            <!-- Cards de Opções -->
+            <div class="row g-4 mb-5">
+                <!-- Cadastro Público -->
+                <div class="col-md-4">
+                    <div class="card card-feature border-success">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-feature text-success">
+                                <i class="bi bi-person-plus"></i>
+                            </div>
+                            <h3 class="card-title h4 text-success mb-3">
+                                Cadastro Público
+                            </h3>
+                            <p class="card-text text-muted mb-4">
+                                Faça seu cadastro como motorista sem necessidade de login ou senha.
+                            </p>
+                            <a href="{% url 'drivers:motorista_create' %}"
+                               class="btn btn-success btn-custom w-100">
+                                Fazer Cadastro
+                            </a>
+                            <small class="text-muted d-block mt-2">
+                                ⚡ Rápido e sem burocracia
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Área do Motorista -->
+                <div class="col-md-4">
+                    <div class="card card-feature border-warning">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-feature text-warning">
+                                <i class="bi bi-shield-lock"></i>
+                            </div>
+                            <h3 class="card-title h4 text-warning mb-3">
+                                Área do Motorista
+                            </h3>
+                            <p class="card-text text-muted mb-4">
+                                Acesse sua área pessoal para editar dados e ver informações.
+                            </p>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'drivers:dashboard' %}"
+                                   class="btn btn-warning btn-custom w-100 text-white">
+                                    Minha Área
+                                </a>
+                            {% else %}
+                                <a href="{% url 'login' %}"
+                                   class="btn btn-warning btn-custom w-100 text-white">
+                                    Fazer Login
+                                </a>
+                            {% endif %}
+                            <small class="text-muted d-block mt-2">
+                                🔒 Acesso seguro com login
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Administração -->
+                <div class="col-md-4">
+                    <div class="card card-feature border-danger">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-feature text-danger">
+                                <i class="bi bi-gear"></i>
+                            </div>
+                            <h3 class="card-title h4 text-danger mb-3">
+                                Administração
+                            </h3>
+                            <p class="card-text text-muted mb-4">
+                                Painel administrativo para gerenciar todos os cadastros do sistema.
+                            </p>
+                            <a href="/admin/"
+                               class="btn btn-danger btn-custom w-100">
+                                Painel Admin
+                            </a>
+                            <small class="text-muted d-block mt-2">
+                                👑 Acesso restrito
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informações do Sistema -->
+            <div class="bg-light rounded-3 p-5">
+                <h2 class="text-center mb-4 text-primary">
+                    <i class="bi bi-info-circle me-2"></i>Como funciona o sistema?
+                </h2>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-start">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-3 me-3">
+                                <span class="text-primary fs-4">1️⃣</span>
+                            </div>
+                            <div>
+                                <h4 class="h5 text-primary mb-2">Cadastro Público</h4>
+                                <p class="text-muted mb-0">
+                                    Qualquer pessoa pode se cadastrar como motorista sem precisar de senha.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-start">
+                            <div class="bg-success bg-opacity-10 p-3 rounded-3 me-3">
+                                <span class="text-success fs-4">2️⃣</span>
+                            </div>
+                            <div>
+                                <h4 class="h5 text-success mb-2">Análise da Administração</h4>
+                                <p class="text-muted mb-0">
+                                    A administração analisa os cadastros e entra em contato com os aprovados.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-start">
+                            <div class="bg-purple bg-opacity-10 p-3 rounded-3 me-3">
+                                <span class="text-purple fs-4">3️⃣</span>
+                            </div>
+                            <div>
+                                <h4 class="h5 text-purple mb-2">Acesso Personalizado</h4>
+                                <p class="text-muted mb-0">
+                                    Motoristas aprovados recebem acesso à área privada para gerenciar seus dados.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estatísticas (apenas para admin) -->
+            {% if user.is_authenticated and user.is_staff %}
+            <div class="mt-5 p-4 bg-dark text-white rounded-3">
+                <h3 class="text-center mb-4">
+                    <i class="bi bi-graph-up"></i> Estatísticas do Sistema
+                </h3>
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="fs-2 fw-bold text-primary">{{ total_motoristas|default:"0" }}</div>
+                            <div class="text-white-50">Total Cadastros</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="fs-2 fw-bold text-success">{{ motoristas_ativos|default:"0" }}</div>
+                            <div class="text-white-50">Ativos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="fs-2 fw-bold text-warning">{{ motoristas_inativos|default:"0" }}</div>
+                            <div class="text-white-50">Inativos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="fs-2 fw-bold text-info">{{ ultimos_cadastros.count|default:"0" }}</div>
+                            <div class="text-white-50">Novos (7 dias)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center text-white py-4">
+        <div class="container">
+            <p class="mb-0">
+                &copy; 2024 MotoristaPower. Todos os direitos reservados.
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

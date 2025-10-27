@@ -29,10 +29,58 @@ from .models import Motorista
 logger = logging.getLogger(__name__)
 
 
-# 🚨 CORREÇÃO: LoginRequiredMixin garante que o usuário anônimo seja redirecionado
+# ✅ NOVAS VIEWS PÚBLICAS (SEM LOGIN)
+
+def pagina_inicial(request):
+    """Página inicial pública - qualquer um acessa sem login"""
+    return render(request, 'drivers/pagina_inicial.html')
+
+
+def pagina_sucesso(request):
+    """Página de sucesso após cadastro - pública"""
+    return render(request, 'drivers/sucesso.html')
+
+
+def cadastro_motorista(request):
+    """
+    ✅ CADASTRO PÚBLICO - qualquer pessoa pode se cadastrar sem login
+    """
+    if request.method == 'POST':
+        form = MotoristaForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                motorista = form.save(commit=False)
+
+                # ✅ SE o usuário ESTIVER LOGADO, associa a ele
+                if request.user.is_authenticated:
+                    motorista.user = request.user
+                # ✅ SE for USUÁRIO ANÔNIMO, cria sem usuário (pode fazer login depois)
+                else:
+                    motorista.user = None
+
+                motorista.save()
+
+                messages.success(request, f"✅ Motorista {motorista.nome_completo} cadastrado com sucesso!")
+
+                # ✅ Redireciona para página de sucesso (pública)
+                return redirect('drivers:sucesso')
+
+            except IntegrityError:
+                messages.error(request, '❌ Já existe um motorista com este CPF ou CNH!')
+            except Exception as e:
+                messages.error(request, f'❌ Erro ao cadastrar: {e}')
+        else:
+            messages.error(request, '❌ Erro no formulário. Verifique os dados.')
+    else:
+        form = MotoristaForm()
+
+    return render(request, 'drivers/cadastro_motorista.html', {'form': form, 'editando': False})
+
+
+# 🔐 VIEWS PRIVADAS (COM LOGIN REQUIRED)
+
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'drivers/dashboard.html'
-    # Redireciona para o login se não estiver autenticado.
     login_url = '/accounts/login/'
 
     def get_context_data(self, **kwargs):
@@ -66,7 +114,6 @@ class MotoristaListView(LoginRequiredMixin, ListView):
     context_object_name = 'motoristas'
     paginate_by = 10
     ordering = ['-created_at']
-    # 🚨 CORREÇÃO: Força o redirecionamento para o login se não estiver autenticado
     login_url = '/accounts/login/'
 
     def get_queryset(self):
@@ -148,7 +195,6 @@ class MotoristaDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     success_url = reverse_lazy('drivers:motorista_list')
     login_url = '/accounts/login/'
 
-    # 🚨 CORREÇÃO DE PERMISSÃO: Permite APENAS STAFF (Superusuários)
     def test_func(self):
         # Apenas Staff/Admin pode deletar
         return self.request.user.is_staff
@@ -158,75 +204,12 @@ class MotoristaDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return redirect('drivers:dashboard')
 
     def delete(self, request, *args, **kwargs):
-        # 🚨 CORREÇÃO PARA A DELEÇÃO: Se o Superusuário não está conseguindo deletar,
-        # o problema é no formulário ou na URL, mas a permissão aqui está correta.
         messages.success(request, 'Motorista excluído com sucesso!')
         return super().delete(request, *args, **kwargs)
 
 
-def cadastro_motorista(request):
-    # 🚨 FLUXO PÚBLICO: Não exige @login_required.
-    # O motorista anônimo pode acessar.
-    # Associa o cadastro ao usuário ANÔNIMO, forçando-o a logar para ver a lista.
-
-    # 🔑 Se o usuário for um motorista COMUM logado e já tiver cadastro, redireciona para a edição.
-    if Motorista.objects.filter(user=request.user).exists() and not request.user.is_staff and request.user.is_authenticated:
-        messages.warning(request, "Você já possui um cadastro de motorista ativo. Por favor, use a opção de Edição.")
-        motorista_existente = Motorista.objects.get(user=request.user)
-        return redirect('drivers:motorista_update', pk=motorista_existente.pk)
-
-    # 🔑 Se for anônimo, ou staff, segue para o cadastro
-    form = MotoristaForm(request.POST, request.FILES) if request.method == 'POST' else MotoristaForm()
-
-    if request.method == 'POST':
-        if form.is_valid():
-            try:
-                motorista = form.save(commit=False)
-
-                # 🚨 ATENÇÃO: Se o usuário é ANÔNIMO, ele NÃO tem um objeto Motorista.
-                # Ele deve se cadastrar, e o sistema irá associar o motorista a ele.
-                # Se for um superusuário cadastrando outro motorista, ele será associado.
-                if not motorista.user:
-                    # Associa o motorista ao usuário logado (pode ser o Superusuario ou um novo usuário)
-                    # NOTA: O fluxo ideal exige que o usuário ANÔNIMO seja forçado a criar um usuário/login
-                    # antes de associar o motorista. Aqui estamos associando ao usuário atual (logado ou anônimo)
-                    motorista.user = request.user
-
-                motorista.save()
-
-                nome_motorista = motorista.nome_completo or "Motorista Sem Nome"
-
-                # ... (Lógica de thread para WhatsApp e log) ...
-
-                messages.success(request,
-                                 f"✅ Motorista {nome_motorista} cadastrado com sucesso! WhatsApp sendo enviado... 📱")
-
-                # Redirecionamento adaptado por permissão
-                if not request.user.is_staff:
-                    # Motorista comum/anônimo é enviado para o Dashboard/Lista (será forçado a logar)
-                    return redirect('drivers:dashboard')
-
-                return redirect('drivers:motorista_list')
-
-            except IntegrityError:
-                messages.error(request,
-                               '❌ Erro de Cadastro: Já existe um motorista com o mesmo CPF ou CNH no sistema. Verifique os campos únicos.')
-                logger.warning("Tentativa de cadastro com dados duplicados (CPF/CNH).")
-
-            except Exception as e:
-                logger.error(f"Erro inesperado durante o save do motorista: {e}")
-                messages.error(request, '❌ Erro interno no servidor ao cadastrar o motorista. Tente novamente.')
-
-        else:
-            messages.error(request, '⚠️ Erro de Validação: Por favor, corrija os erros nos campos destacados abaixo.')
-
-    context = {'form': form, 'editando': False}
-    return render(request, 'drivers/cadastro_motorista.html', context)
-
-
 @login_required
 def lista_motoristas(request):
-    # A MotoristaListView acima já faz essa filtragem, mas mantendo a view de função aqui por segurança.
     if not request.user.is_staff:
         motoristas = Motorista.objects.filter(user=request.user)
     else:
@@ -241,12 +224,10 @@ def lista_motoristas(request):
 
 @login_required
 def relatorio_estatisticas(request):
-    # 🚨 SEGURANÇA: Apenas staff pode ver as estatísticas globais
     if not request.user.is_staff:
         messages.error(request, "Acesso negado. Apenas administradores podem ver as estatísticas.")
         return redirect('drivers:dashboard')
 
-    # ... (restante do código) ...
     total_motoristas = Motorista.objects.count()
     status_stats = Motorista.objects.values('status').annotate(total=Count('id')).order_by('-total')
     estado_stats = Motorista.objects.values('estado').annotate(total=Count('id')).order_by('-total')
@@ -283,7 +264,7 @@ def relatorio_excel(request):
     if not request.user.is_staff:
         messages.error(request, "Acesso negado. Apenas administradores podem gerar relatórios.")
         return redirect('drivers:dashboard')
-    # ... (restante do código) ...
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Relatório Motoristas"
@@ -349,7 +330,6 @@ def relatorio_pdf(request):
         messages.error(request, "Acesso negado. Apenas administradores podem gerar relatórios.")
         return redirect('drivers:dashboard')
 
-    # ... (restante do código) ...
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
 
@@ -382,7 +362,7 @@ def relatorio_pdf(request):
     if motoristas:
         data = [['ID', 'Nome', 'CPF', 'Idade', 'Cidade/UF', 'Status', 'CNH']]
 
-        for motorista in motoristas:
+        for motorista in enumerate(motoristas):
             data.append([
                 str(motorista.id),
                 motorista.nome_completo or 'NÃO INFORMADO',
@@ -434,7 +414,6 @@ def relatorio_estatisticas_excel(request):
         messages.error(request, "Acesso negado. Apenas administradores podem gerar relatórios.")
         return redirect('drivers:dashboard')
 
-    # ... (restante do código) ...
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Estatísticas"

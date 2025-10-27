@@ -141,7 +141,8 @@
         <i class="fas fa-bars text-lg"></i>
     </button>
 
-    <!-- BARRA LATERAL -->
+    <!-- BARRA LATERAL - SÓ APARECE SE USUÁRIO ESTIVER LOGADO -->
+    {% if user.is_authenticated %}
     <div id="sidebar" class="sidebar flex-col p-4 md:p-6 shadow-xl">
         <div class="text-2xl font-extrabold mb-8 text-yellow-400 text-center md:text-left">
             <i class="fas fa-car mr-2"></i>MotoristaPower
@@ -169,7 +170,7 @@
                 </a>
 
                 <!-- Relatórios (Apenas Staff/Admin) -->
-                {% if user.is_authenticated and user.is_staff %}
+                {% if user.is_staff %}
                 <a href="{% url 'drivers:relatorios' %}" class="flex items-center p-3 rounded-lg hover:bg-gray-600 transition-colors {% if 'relatorio' in request.resolver_match.url_name %}bg-gray-700 border-l-4 border-yellow-400{% endif %}">
                     <i class="fas fa-chart-line w-6 text-center mr-3"></i>
                     <span>Relatórios</span>
@@ -181,39 +182,40 @@
 
         <!-- Informações do Usuário e Logout -->
         <div class="mt-6 pt-6 border-t border-gray-600">
-            {% if user.is_authenticated %}
-                <div class="mb-4">
-                    <p class="text-sm font-semibold text-gray-300">
-                        Logado como:
-                    </p>
-                    <p class="text-yellow-400 font-bold text-sm mt-1">
-                        {% if user.is_staff %}
-                            <i class="fas fa-crown mr-1"></i>ADMIN
-                        {% else %}
-                            <i class="fas fa-user mr-1"></i>{{ user.username|default:"Usuário" }}
-                        {% endif %}
-                    </p>
-                </div>
+            <div class="mb-4">
+                <p class="text-sm font-semibold text-gray-300">
+                    Logado como:
+                </p>
+                <p class="text-yellow-400 font-bold text-sm mt-1">
+                    {% if user.is_staff %}
+                        <i class="fas fa-crown mr-1"></i>ADMIN
+                    {% else %}
+                        <i class="fas fa-user mr-1"></i>{{ user.username|default:"Usuário" }}
+                    {% endif %}
+                </p>
+            </div>
 
-                <!-- Botão de Logout CORRIGIDO -->
-                <a href="{% url 'logout' %}" class="flex items-center p-3 rounded-lg text-red-300 hover:bg-red-700 hover:text-white transition-colors">
-                    <i class="fas fa-sign-out-alt w-6 text-center mr-3"></i>
-                    <span>Sair</span>
-                </a>
-            {% else %}
-                <div class="mb-4">
-                    <p class="text-sm font-semibold text-gray-300">Visitante</p>
-                </div>
-                <a href="{% url 'login' %}" class="flex items-center p-3 rounded-lg text-green-300 hover:bg-green-700 hover:text-white transition-colors">
-                    <i class="fas fa-sign-in-alt w-6 text-center mr-3"></i>
-                    <span>Login</span>
-                </a>
-            {% endif %}
+            <!-- Botão de Logout -->
+            <a href="{% url 'logout' %}" class="flex items-center p-3 rounded-lg text-red-300 hover:bg-red-700 hover:text-white transition-colors">
+                <i class="fas fa-sign-out-alt w-6 text-center mr-3"></i>
+                <span>Sair</span>
+            </a>
         </div>
     </div>
+    {% endif %}
 
     <!-- CONTEÚDO PRINCIPAL -->
     <main id="main-content" class="flex-1 w-full md:w-auto content p-4 md:p-8">
+        <!-- ✅ BOTÃO VOLTAR PARA PÁGINA INICIAL (APENAS PARA USUÁRIOS NÃO LOGADOS EM PÁGINAS PÚBLICAS) -->
+        {% if not user.is_authenticated and request.resolver_match.url_name != 'index' %}
+        <div class="mb-4">
+            <a href="{% url 'drivers:index' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Voltar para Página Inicial
+            </a>
+        </div>
+        {% endif %}
+
         <!-- Mensagens do Django -->
         {% if messages %}
             <div class="mb-6 space-y-3">
@@ -253,64 +255,68 @@
             const overlay = document.getElementById('sidebar-overlay');
             const mainContent = document.getElementById('main-content');
 
-            // Inicialização
-            function initializeLayout() {
-                const isMobile = window.innerWidth < 769;
+            // Só inicializa se sidebar existir (usuário logado)
+            if (sidebar) {
+                // Inicialização
+                function initializeLayout() {
+                    const isMobile = window.innerWidth < 769;
 
-                if (isMobile) {
-                    // Mobile: esconde sidebar, mostra toggle
-                    sidebar.classList.remove('open');
-                    sidebar.style.transform = 'translateX(-100%)';
-                    toggleButton.classList.remove('hidden');
-                    overlay.classList.remove('active');
-                } else {
-                    // Desktop: mostra sidebar, esconde toggle
-                    sidebar.style.transform = 'translateX(0)';
-                    toggleButton.classList.add('hidden');
-                    overlay.classList.remove('active');
-                }
-            }
-
-            // Toggle sidebar mobile
-            function toggleSidebar() {
-                const isOpen = sidebar.classList.contains('open');
-
-                if (isOpen) {
-                    sidebar.classList.remove('open');
-                    overlay.classList.remove('active');
-                } else {
-                    sidebar.classList.add('open');
-                    overlay.classList.add('active');
-                }
-            }
-
-            // Event Listeners
-            if (toggleButton) {
-                toggleButton.addEventListener('click', toggleSidebar);
-            }
-
-            if (overlay) {
-                overlay.addEventListener('click', toggleSidebar);
-            }
-
-            // Fechar sidebar ao clicar em links (mobile)
-            sidebar.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', () => {
-                    if (window.innerWidth < 769) {
-                        toggleSidebar();
+                    if (isMobile) {
+                        // Mobile: esconde sidebar, mostra toggle
+                        sidebar.classList.remove('open');
+                        sidebar.style.transform = 'translateX(-100%)';
+                        toggleButton.classList.remove('hidden');
+                        overlay.classList.remove('active');
+                    } else {
+                        // Desktop: mostra sidebar, esconde toggle
+                        sidebar.style.transform = 'translateX(0)';
+                        toggleButton.classList.add('hidden');
+                        overlay.classList.remove('active');
                     }
+                }
+
+                // Toggle sidebar mobile
+                function toggleSidebar() {
+                    const isOpen = sidebar.classList.contains('open');
+
+                    if (isOpen) {
+                        sidebar.classList.remove('open');
+                        overlay.classList.remove('active');
+                    } else {
+                        sidebar.classList.add('open');
+                        overlay.classList.add('active');
+                    }
+                }
+
+                // Event Listeners
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', toggleSidebar);
+                }
+
+                if (overlay) {
+                    overlay.addEventListener('click', toggleSidebar);
+                }
+
+                // Fechar sidebar ao clicar em links (mobile)
+                sidebar.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (window.innerWidth < 769) {
+                            toggleSidebar();
+                        }
+                    });
                 });
-            });
 
-            // Redimensionamento
-            window.addEventListener('resize', initializeLayout);
+                // Redimensionamento
+                window.addEventListener('resize', initializeLayout);
 
-            // Inicializar
-            initializeLayout();
+                // Inicializar
+                initializeLayout();
+            }
 
             // Debug helper
             console.log('✅ Layout inicializado');
             console.log('📱 Mobile:', window.innerWidth < 769);
+            console.log('🔐 Usuário logado:', {% if user.is_authenticated %}true{% else %}false{% endif %});
         });
     </script>
 </body>
